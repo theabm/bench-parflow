@@ -5,7 +5,7 @@ set -xue
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 export SSL_CERT_DIR=/etc/ssl/certs
 
-BASE_ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
+BASE_ROOTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 TCL_PATH=$(which tclsh8.6)
 
@@ -18,8 +18,8 @@ PF_DIR=${BASE_ROOTDIR}/parflow-pdi
 #-------------------------------Parflow-PDI-----------------------------------------
 
 if [ ! -d "$PF_DIR" ]; then
-	echo "Downloading Parflow..."
-	git clone https://github.com/theabm/parflow-insitu.git"$PF_DIR"
+  echo "Downloading Parflow..."
+  git clone git@github.com:theabm/parflow-insitu.git "$PF_DIR"
 fi
 
 # build and install
@@ -30,26 +30,26 @@ export FC=mpif90
 rm -rf "$PF_DIR"/build "$PF_DIR"/install
 mkdir "$PF_DIR"/install
 
-echo "Building Parflow..." 
+echo "Building Parflow..."
 
 cmake -DCMAKE_INSTALL_PREFIX="$PF_DIR"/install \
-				-DPARFLOW_HAVE_CLM=ON \
-				-DPARFLOW_AMPS_LAYER=mpi1 \
-				-DTCL_TCLSH=$TCL_PATH \
-				-DPDI_ROOT=$PDI_INSTALL \
-				-DNETCDF_DIR=$(nc-config --prefix) \
-				-DPARFLOW_ENABLE_HDF5=TRUE \
-				-DPARFLOW_AMPS_SEQUENTIAL_IO=on \
-				-DPARFLOW_ENABLE_TIMING=TRUE \
-				-DCMAKE_BUILD_TYPE=Release \
-				-DPARFLOW_ENABLE_SLURM=TRUE \
-				-S "$PF_DIR" -B "$PF_DIR"/build
+  -DPARFLOW_HAVE_CLM=ON \
+  -DPARFLOW_AMPS_LAYER=mpi1 \
+  -DTCL_TCLSH=$TCL_PATH \
+  -DPDI_ROOT=$PDI_INSTALL \
+  -DNETCDF_DIR=$(nc-config --prefix) \
+  -DPARFLOW_ENABLE_HDF5=TRUE \
+  -DPARFLOW_AMPS_SEQUENTIAL_IO=on \
+  -DPARFLOW_ENABLE_TIMING=TRUE \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DPARFLOW_ENABLE_SLURM=TRUE \
+  -S "$PF_DIR" -B "$PF_DIR"/build
 
 make -C "$PF_DIR"/build -j $(nproc)
 make -C "$PF_DIR"/build install
 
 if [ $? -eq 0 ]; then
-        echo "Parflow installed sucessfully!"
+  echo "Parflow installed sucessfully!"
 else
-        echo "Parflow installation failed!"
+  echo "Parflow installation failed!"
 fi
