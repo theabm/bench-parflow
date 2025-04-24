@@ -68,13 +68,22 @@ cp "$PF_DIR"/pfsimulator/third_party/pdi/conf-deisa-insitu.yml "$EXP_DIR"/conf.y
 cp "$BASE_ROOTDIR"/scripts/run/clayL.tcl "$EXP_DIR"/clayL.tcl
 mkdir ./errors
 
+
+HOST_FILE="./hostfile.txt"
+
+for node in "${REMAINING_NODES[@]}"; do
+    for procs in $(seq 1 $MPI_PROCESSES); do
+        echo "$node" >> $HOST_FILE
+    done
+done
+
 # --------------------------------------------------------
 # 			DASK SCHEDULER
 # --------------------------------------------------------
 
 echo "Launching Dask Scheduler on ${SCHEDULER_NODE}..."
 mpirun -x PATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT --report-bindings \
-       --host ${SCHEDULER_NODE}:1 dask scheduler --scheduler-file ./$SCHEFILE 2>./errors/scheduler.e &
+       --host "${SCHEDULER_NODE}":1 dask scheduler --scheduler-file ./$SCHEFILE 2>./errors/scheduler.e &
 
 # Wait for the scheduler file to be created
 while ! [ -f $SCHEFILE ]; do
@@ -91,7 +100,7 @@ echo "Launching Analytics..."
 export LD_LIBRARY_PATH=$GUIX_ENVIRONMENT/lib
 
 mpirun -x PYTHONPATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT -x LD_LIBRARY_PATH   \
- --report-bindings --host ${SCHEDULER_NODE}:1 \
+ --report-bindings --host "${SCHEDULER_NODE}":1 \
  bash -c "source $BASE_ROOTDIR/.venv/bin/activate \
  && python3 $BASE_ROOTDIR/analytics/pressure-deisa-insitu.py $N_REMAINING_NODES $SCHEFILE $MPI_PROCESSES $EXP_DIR "\
  2>./errors/pressure-deisa.e &
@@ -122,11 +131,11 @@ echo "Dask Workers Launched!"
 # --------------------------------------------------------
 
 CASE=${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}
-tclsh ${CASE_NAME}.tcl ${xsplit} ${ysplit} ${nodes} ${cells}
+tclsh ${CASE_NAME}.tcl ${xsplit} ${ysplit} "${nodes}" ${cells}
 
 export LD_LIBRARY_PATH=${PDI_INSTALL}/lib
 mpirun -x BASE_ROOTDIR -x PYTHONPATH -x LD_LIBRARY_PATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT \
-       --host $(printf "%s:$MPI_PROCESSES," "${REMAINING_NODES[@]}" | sed 's/,$//') \
+       --hostfile $HOST_FILE \
        bash -c "source $BASE_ROOTDIR/.venv/bin/activate && ${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE}" \
        2>./errors/simulation.e
 

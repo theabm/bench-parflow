@@ -28,26 +28,18 @@ else:
     exp_dir = str(sys.argv[4])
 
 mapping = {}
-map_file = exp_dir + "/mapping.txt"
-while True:
-    if not os.path.exists(map_file):
-        time.sleep(1)
-        continue    
-    else:
-        with open(map_file, "r") as f:
-            lines = f.readlines()
-            if len(lines) >= mpi_size:
-                for line in lines:
-                    line = line.strip()
-                    if line:
-                        m_rank, m_hostname = line.split()
-                        mapping[int(m_rank)] = m_hostname
-                break
-            else:
-                time.sleep(1)
+map_file = exp_dir + "/hostfile.txt"
+with open(map_file, "r") as f:
+    lines = f.readlines()
+    for i, line in enumerate(lines):
+            hostname = line.strip()
+            if line:
+                mapping[i] = hostname + ":2000"
+
+#print(f"Analytics got mapping: {mapping}\n")
 
 def custom_mapping(size, workers_list):
-  print("########### DEISA Custom mapping function called! ###########\n")
+  #print("########### DEISA Custom mapping function called! ###########\n")
   return mapping
 
 deisa.set_mapping_implementation(custom_mapping)
