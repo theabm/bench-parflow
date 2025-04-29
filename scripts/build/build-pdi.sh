@@ -17,7 +17,7 @@ if [ ! -d "./pdi-$PDIV" ];then
 	# note the release version 1.8.2
 	echo "Downloading PDI..."
     wget https://github.com/pdidev/pdi/archive/refs/tags/$PDIV.tar.gz -P "$BASE_ROOTDIR"
-	tar -xf "$BASE_ROOTDIR"/$PDIV.tar.gz 
+	tar -xf "$BASE_ROOTDIR"/$PDIV.tar.gz -C $BASE_ROOTDIR 
     rm "$BASE_ROOTDIR"/$PDIV.tar.gz 
 else
 	echo "PDI directory already exists. Proceeding to rebuild."
