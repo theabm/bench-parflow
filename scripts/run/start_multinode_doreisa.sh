@@ -51,8 +51,13 @@ export PYTHONPATH=$DOREISA_DIR
 PROFILE=$BASE_ROOTDIR/env/guix/profile
 
 CASE_NAME="clayL"
-xsplit=8  # Number of MPI tasks per node along the x-axis
-ysplit=8  # Number of MPI tasks per node along the y-axis
+if [[ "$#" -eq 1 ]]; then
+  xsplit=$1 # Number of MPI tasks per node along the x-axis
+  ysplit=$1 # Number of MPI tasks per node along the y-axis
+else
+  xsplit=4 # Number of MPI tasks per node along the x-axis
+  ysplit=4 # Number of MPI tasks per node along the y-axis
+fi
 cells=120 # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$N_REMAINING_NODES
 MPI_PROCESSES=$((xsplit * ysplit))
@@ -63,6 +68,10 @@ cd "$EXP_DIR"
 cp "$PF_DIR"/pfsimulator/third_party/pdi/conf-doreisa.yml "$EXP_DIR"/conf.yml
 cp "$BASE_ROOTDIR"/scripts/run/clayL.tcl "$EXP_DIR"/clayL.tcl
 mkdir ./errors
+
+# -------------------------------------------------------- Time measurement
+# --------------------------------------------------------
+start=$(date +%s)
 
 # --------------------------------------------------------
 # 			RAY HEAD NODE
@@ -115,6 +124,8 @@ echo Simulation Finished!
 # --------------------------------------------------------
 
 echo "Waiting on analytics.."
+end=$(date +%s)
+echo Execution time was $(expr $end - $start) seconds.
 wait $ANALYTICS_PID
 echo "Analytics Finished!"
 

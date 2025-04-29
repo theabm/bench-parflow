@@ -17,6 +17,7 @@ import yaml
 import dask
 import sys
 import time
+import numpy as np
 
 # Initialize Deisa
 if len(sys.argv) < 5:
@@ -56,24 +57,53 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
     p = analytics["global_pressure", :, :, :, :]
     analytics.ready()
 
-    print("shape: ",  p.shape)
-
-    # Construct a lazy task graph
-    # mean over time
-    psum = p.sum(axis = (1,2,3))
-
-    # Submit the task graph to the scheduler
-    # scheduler gets the graph and doesnt do anything yet.
+    #Computing number of cells
     totcells = 1
     for cells in p.shape[1:]:
         totcells *= cells
     print(f"{totcells=}")
-    
-    psum = psum.compute()
-    print(f"Sum of pressure per timestep: {psum}")
-    psum = psum/totcells
 
-    print(f"Average of pressure per timestep: {psum}")
+
+    print("start computation...")
+    #select specific timestep
+    timestep = 1
+
+    ###### AVERGARE BY TIMESTEP ######
+    sum_p = p.sum(axis = (1,2,3))
+    ##### Std. Dev. Pressure At specific Timestep ######
+    std_p = p[timestep].std()
+    ##### Integral over a window [0, 1, 2] ######
+    integral_p = ((p[2] + p[0] + 4 * p[1])/3).mean()
+    ##### Derivative At specific Timestep ######
+    derivative_p = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean()
+    
+    #Submit tasks graphs to the scheduler
+    sum = sum_p.persist();
+    std = std_p.persist()
+    integral = integral_p.persist()
+    derivative = derivative_p.persist()
+
+    start = time.time()
+    sum= sum.compute()
+    end = time.time()
+    print(f"Sum of pressure per timestep: {sum}")
+    avg = sum/totcells
+    print(f"Average of pressure per timestep: {avg} in {end - start} sec")
+
+    start = time.time()
+    std = std.compute()
+    end = time.time()
+    print(f"Std. Dev. Pressure at timestep {timestep}: {std} in {end - start} sec")
+    
+    start = time.time()
+    integral = integral.compute()
+    end = time.time()
+    print(f"Integral: {integral} in {end - start} sec")
+
+    start = time.time()
+    derivative = derivative.compute()
+    end = time.time()
+    print(f"Derivative at timestep {timestep}: {derivative} in {end - start} sec")
 
 print("Done", flush=True)
 analytics.wait_for_last_bridge_and_shutdown()
