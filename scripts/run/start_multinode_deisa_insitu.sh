@@ -99,7 +99,8 @@ while ! [ -f $SCHEFILE ]; do
   sleep 3
 done
 
-echo "Dask Scheduler Launched!"
+end=$(date +%s)
+echo Dask Scheduler Launched at $(expr $end - $start) seconds.
 
 # --------------------------------------------------------
 # 				ANALYTICS
@@ -132,7 +133,8 @@ mpirun --host $(printf "%s:1," "${REMAINING_NODES[@]}" | sed 's/,$//') \
     --local-directory ./workers --nworkers 1 --nthreads 10" \
   2>./errors/dask-workers.e &
 
-echo "Dask Workers Launched!"
+end=$(date +%s)
+echo Dask Workers Launched! at $(expr $end - $start) seconds.
 
 # --------------------------------------------------------
 # 				SIMULATION
@@ -147,7 +149,8 @@ mpirun -mca mtl psm2 -mca pml ^ucx,ofi -mca btl ^ofi,openib -x BASE_ROOTDIR -x P
   bash -c "source $BASE_ROOTDIR/.venv/bin/activate && ${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE}" \
   2>./errors/simulation.e
 
-echo "Simulation Finished!"
+end=$(date +%s)
+echo Simulation Finished! at $(expr $end - $start) seconds.
 
 # --------------------------------------------------------
 # 				WAIT FOR PROCESSES TO FINISH
@@ -157,7 +160,7 @@ echo "Waiting on analytics..."
 wait $ANALYTICS_PID
 end=$(date +%s)
 echo "Analytics Finished!"
-echo Execution time with $MPI_PROCESSES was $(expr $end - $start) seconds.
+echo Execution time was $(expr $end - $start) seconds.
 
 cd "$OLDPWD"
 echo "Cleaning up..."

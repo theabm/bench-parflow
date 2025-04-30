@@ -79,13 +79,16 @@ start=$(date +%s)
 
 mpirun -x PATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT --report-bindings \
   --host "${HEAD_NODE}":1 ray start --head --port=$PORT
+end=$(date +%s)
+echo Ray Head node started at $(expr $end - $start) seconds.
 sleep 10
 
 # --------------------------------------------------------
 # 				ANALYTICS
 # --------------------------------------------------------
 
-echo Launching Analytics...
+end=$(date +%s)
+echo Launching Analytics at $(expr $end - $start) seconds.
 export LD_LIBRARY_PATH=$GUIX_ENVIRONMENT/lib
 
 mpirun -x PYTHONPATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT -x LD_LIBRARY_PATH \
@@ -111,13 +114,16 @@ tclsh ${CASE_NAME}.tcl ${xsplit} ${ysplit} ${nodes} ${cells}
 mpirun --host $(printf "%s:1," "${REMAINING_NODES[@]}" | sed 's/,$//') \
   bash -c "export GUIX_PROFILE=$PROFILE && source $PROFILE/etc/profile && source $BASE_ROOTDIR/.venv/bin/activate && ray start --address ${HEAD_ADDRESS} --num-cpus=2 &"
 
+end=$(date +%s)
+echo ray started and connected to head node at $(expr $end - $start) seconds.
 sleep 20
 
 mpirun -mca mtl psm2 -mca pml ^ucx,ofi -mca btl ^ofi,openib -x PYTHONPATH --host $(printf "%s:$MPI_PROCESSES," "${REMAINING_NODES[@]}" | sed 's/,$//') \
   bash -c "export GUIX_PROFILE=$PROFILE && source $PROFILE/etc/profile && source $BASE_ROOTDIR/.venv/bin/activate && ${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE}" \
   2>./errors/simulation.e
 
-echo Simulation Finished!
+end=$(date +%s)
+echo Simulation Finished! at $(expr $end - $start) seconds.
 
 # --------------------------------------------------------
 # 		WAIT FOR PROCESSES TO FINISH
@@ -126,7 +132,7 @@ echo Simulation Finished!
 echo "Waiting on analytics.."
 end=$(date +%s)
 echo Execution time was $(expr $end - $start) seconds.
-wait $ANALYTICS_PID
+#wait $ANALYTICS_PID
 echo "Analytics Finished!"
 
 cd "$OLDPWD"
