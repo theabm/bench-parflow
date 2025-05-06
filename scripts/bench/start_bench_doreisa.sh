@@ -21,13 +21,13 @@ echo "Starting bench for doreisa..."
 #Adapted to Nancy gros cluster 36 max process
 for ((i = 0; i < $ITERATION; i++)); do
   ray stop
-  bash $SCRIPT_DIR/start_multinode_doreisa.sh 6 >$BENCH_DIR/results/doreisa_6_6_$i.o
-  #bash $SCRIPT_DIR/start_multinode_doreisa.sh 4 | grep -v + >$BENCH_DIR/results/doreisa_4_4_$i.o
-  #bash $SCRIPT_DIR/start_multinode_doreisa.sh 2 | grep -v + >$BENCH_DIR/results/doreisa_2_2_$i.o
+  bash $SCRIPT_DIR/start_multinode_doreisa.sh 6 >$BENCH_DIR/results/doreisa_6_6_${i}_$(date +%Y%m%d_%H%M%S).o
+  sleep 10
+  pkill mpirun
 done
 
 #CLEANING CLAYL FILES...
 echo "Benchmark ended, result folder : $BENCH_DIR/results"
-echo "Cleaning ClayL files... (exec $BENCH_DIR/clean_clay.sh"
+#echo "Cleaning ClayL files... (exec $BENCH_DIR/clean_clay.sh"
 
-bash $BENCH_DIR/clean_clay.sh
+rm -rf ~/bench-parflow/clayL_*
