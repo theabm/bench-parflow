@@ -3,7 +3,7 @@
 BASE_ROOTDIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 SCRIPT_DIR=$BASE_ROOTDIR/scripts/run
 BENCH_DIR=$BASE_ROOTDIR/scripts/bench
-ITERATION=4
+ITERATION=3
 
 #SETUP ENVIRONMENT FOR SCRIPTS
 eval "$(guix shell --preserve=OAR* --search-paths -m $BASE_ROOTDIR/env/guix/manifest-pip.scm)"
@@ -21,13 +21,23 @@ echo "Starting bench for deisa in situ..."
 #Adapted to Nancy gros cluster 36 max process
 for ((i = 0; i < $ITERATION; i++)); do
   pkill dask
-  bash $SCRIPT_DIR/start_multinode_deisa_insitu.sh 6 >$BENCH_DIR/results/deisa_insitu_6_6_${i}_$(date +%Y%m%d_%H%M%S).o
+  bash $SCRIPT_DIR/start_multinode_deisa_insitu.sh 6 5 >$BENCH_DIR/results/deisa_insitu_6_5_$(date +%Y%m%d_%H%M%S).o
   sleep 10
   pkill mpirun
 done
 
-#CLEANING CLAYL FILES...
+#Move log file of every run in results folder
+for filename in $BASE_ROOTDIR/clayL_*; do
+  echo $filename
+  LOG_FILE=$(basename ${filename})
+  rm ${filename}/*.kinsol.*
+  mv ${filename}/*.log $BENCH_DIR/results/${LOG_FILE}.log
+done
+
+ray stop
 echo "Benchmark ended, result folder : $BENCH_DIR/results"
-echo "Cleaning ClayL files..."
+
+#CLEANING CLAYL FILES...
+echo "Cleaning ClayL files... (exec $BENCH_DIR/clean_clay.sh"
 
 rm -rf ~/bench-parflow/clayL_*

@@ -51,14 +51,14 @@ export PYTHONPATH=$DOREISA_DIR
 PROFILE=$BASE_ROOTDIR/env/guix/profile
 
 CASE_NAME="clayL"
-if [[ "$#" -eq 1 ]]; then
+if [[ "$#" -eq 2 ]]; then
   xsplit=$1 # Number of MPI tasks per node along the x-axis
-  ysplit=$1 # Number of MPI tasks per node along the y-axis
+  ysplit=$2 # Number of MPI tasks per node along the y-axis
 else
   xsplit=4 # Number of MPI tasks per node along the x-axis
   ysplit=4 # Number of MPI tasks per node along the y-axis
 fi
-cells=120 # Total number of cells along each dimension per node (square problem in x and y dimensions)
+cells=240 # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$N_REMAINING_NODES
 MPI_PROCESSES=$((xsplit * ysplit))
 
@@ -88,7 +88,8 @@ sleep 10
 # --------------------------------------------------------
 
 end=$(date +%s)
-echo Launching Analytics at $(expr $end - $start) seconds.
+ANALYTICS_START=$(expr $end - $start)
+echo Launching Analytics at $ANALYTICS_START seconds.
 export LD_LIBRARY_PATH=$GUIX_ENVIRONMENT/lib
 
 mpirun -x PYTHONPATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT -x LD_LIBRARY_PATH \
@@ -128,11 +129,9 @@ echo Simulation Finished! at $(expr $end - $start) seconds.
 # --------------------------------------------------------
 # 		WAIT FOR PROCESSES TO FINISH
 # --------------------------------------------------------
-
 echo "Waiting on analytics.."
 end=$(date +%s)
-echo Execution time was $(expr $end - $start) seconds.
-#wait $ANALYTICS_PID
+wait $ANALYTICS_PID
 echo "Analytics Finished!"
 
 cd "$OLDPWD"

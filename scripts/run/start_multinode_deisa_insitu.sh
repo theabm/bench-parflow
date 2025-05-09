@@ -55,14 +55,14 @@ SCHEFILE=scheduler.json
 PROFILE=$BASE_ROOTDIR/env/guix/profile
 
 CASE_NAME="clayL"
-if [[ "$#" -eq 1 ]]; then
+if [[ "$#" -eq 2 ]]; then
   xsplit=$1 # Number of MPI tasks per node along the x-axis
-  ysplit=$1 # Number of MPI tasks per node along the y-axis
+  ysplit=$2 # Number of MPI tasks per node along the y-axis
 else
   xsplit=4 # Number of MPI tasks per node along the x-axis
   ysplit=4 # Number of MPI tasks per node along the y-axis
 fi
-cells=120 # Total number of cells along each dimension per node (square problem in x and y dimensions)
+cells=240 # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$N_REMAINING_NODES
 MPI_PROCESSES=$((xsplit * ysplit))
 
@@ -130,7 +130,7 @@ mpirun --host $(printf "%s:1," "${REMAINING_NODES[@]}" | sed 's/,$//') \
     && source $PROFILE/etc/profile \
     && source $BASE_ROOTDIR/.venv/bin/activate \
     && dask worker --worker-port 2000 --scheduler-file ./$SCHEFILE \
-    --local-directory ./workers --nworkers 1 --nthreads 10" \
+    --local-directory ./workers --nworkers 1 --nthreads 4" \
   2>./errors/dask-workers.e &
 
 end=$(date +%s)

@@ -56,54 +56,19 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
 ):
     p = analytics["global_pressure", :, :, :, :]
     analytics.ready()
-
-    #Computing number of cells
-    totcells = 1
-    for cells in p.shape[1:]:
-        totcells *= cells
-    print(f"{totcells=}")
-
-
-    print("start computation...")
+    start = time.perf_counter()
+    
+    pp = p.persist()
+    #print("start computation...")
     #select specific timestep
-    timestep = 1
-
+    
     ###### AVERGARE BY TIMESTEP ######
-    sum_p = p.sum(axis = (1,2,3))
-    ##### Std. Dev. Pressure At specific Timestep ######
-    std_p = p[timestep].std()
-    ##### Integral over a window [0, 1, 2] ######
-    integral_p = ((p[2] + p[0] + 4 * p[1])/3).mean()
-    ##### Derivative At specific Timestep ######
-    derivative_p = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean()
+    sum_p = pp.mean(axis = (1,2,3))
     
     #Submit tasks graphs to the scheduler
-    sum = sum_p.persist();
-    std = std_p.persist()
-    integral = integral_p.persist()
-    derivative = derivative_p.persist()
-
-    start = time.time()
-    sum= sum.compute()
-    end = time.time()
-    print(f"Sum of pressure per timestep: {sum}")
-    avg = sum/totcells
-    print(f"Average of pressure per timestep: {avg} in {end - start} sec")
-
-    start = time.time()
-    std = std.compute()
-    end = time.time()
-    print(f"Std. Dev. Pressure at timestep {timestep}: {std} in {end - start} sec")
-    
-    start = time.time()
-    integral = integral.compute()
-    end = time.time()
-    print(f"Integral: {integral} in {end - start} sec")
-
-    start = time.time()
-    derivative = derivative.compute()
-    end = time.time()
-    print(f"Derivative at timestep {timestep}: {derivative} in {end - start} sec")
+    sum_p= sum_p.compute()
+    end = time.perf_counter()
+    print(f"MEAN : {sum_p}, ANALYTICS TIME : {end - start} seconds")
 
 print("Done", flush=True)
 analytics.wait_for_last_bridge_and_shutdown()

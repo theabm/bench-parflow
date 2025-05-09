@@ -287,7 +287,7 @@ pfset Solver.AbsTol                                     1E-12
  
 pfset Solver.PrintSaturation                            False
 pfset Solver.PrintSubsurf                               False
-pfset Solver.PrintPressure                              True
+pfset Solver.PrintPressure                             	False 
 
 #---- PDI
 pfset Solver.WritePDISubsurfData                        False
