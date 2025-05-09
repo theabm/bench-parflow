@@ -21,7 +21,11 @@ echo "Starting bench for deisa in situ..."
 #Adapted to Nancy gros cluster 36 max process
 for ((i = 0; i < $ITERATION; i++)); do
   pkill dask
-  bash $SCRIPT_DIR/start_multinode_deisa_insitu.sh 6 5 >$BENCH_DIR/results/deisa_insitu_6_5_$(date +%Y%m%d_%H%M%S).o
+  bash $SCRIPT_DIR/start_multinode_deisa_insitu_avg.sh 6 5 >$BENCH_DIR/results/deisa_insitu_avg_6_5_$(date +%Y%m%d_%H%M%S).o
+  sleep 10
+  pkill mpirun
+  pkill dask
+  bash $SCRIPT_DIR/start_multinode_deisa_insitu_derivative.sh 6 5 >$BENCH_DIR/results/deisa_insitu_derivative_6_5_$(date +%Y%m%d_%H%M%S).o
   sleep 10
   pkill mpirun
 done
@@ -34,7 +38,6 @@ for filename in $BASE_ROOTDIR/clayL_*; do
   mv ${filename}/*.log $BENCH_DIR/results/${LOG_FILE}.log
 done
 
-ray stop
 echo "Benchmark ended, result folder : $BENCH_DIR/results"
 
 #CLEANING CLAYL FILES...

@@ -56,18 +56,20 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
 ):
     p = analytics["global_pressure", :, :, :, :]
     analytics.ready()
+
     start = time.perf_counter()
     
     pp = p.persist()
     #print("start computation...")
-    #select specific timestep
     
     ###### AVERGARE BY TIMESTEP ######
     sum_p = pp.mean(axis = (1,2,3))
     
     #Submit tasks graphs to the scheduler
     sum_p= sum_p.compute()
+
     end = time.perf_counter()
+
     print(f"MEAN : {sum_p}, ANALYTICS TIME : {end - start} seconds")
 
 print("Done", flush=True)

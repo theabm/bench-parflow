@@ -16,14 +16,16 @@ def preprocess_pressures(pressures: np.ndarray) -> np.ndarray:
 result = []
 
 def simulation_callback(pressures: list[da.Array], timestep: int):
-    # print timestep 0 and 1
-    avg_p = pressures[0].mean().compute()
-    result.append(avg_p)
-    #print(f"Simulation step: {timestep}\tAvg. Pressure: {avg_p}", flush=True)
+
+    #Derivative of a specific time step
+    if timestep == 1:
+        # derivative (central difference) 
+        # derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).compute()
+        derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).mean().compute()
+        result.append(derivative_p)
     
-# window of size 2
 asyncio.run(doreisa.start(simulation_callback, [
-    doreisa.DaskArrayInfo("pressures", window_size=1),
+    doreisa.DaskArrayInfo("pressures", window_size=3),
 ]))
 
 print(f"Result : {result}")

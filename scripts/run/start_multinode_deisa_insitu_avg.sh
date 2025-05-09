@@ -112,7 +112,7 @@ export LD_LIBRARY_PATH=$GUIX_ENVIRONMENT/lib
 mpirun -x PYTHONPATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT -x LD_LIBRARY_PATH \
   --report-bindings --host "${SCHEDULER_NODE}":1 \
   bash -c "source $BASE_ROOTDIR/.venv/bin/activate \
- && python3 $BASE_ROOTDIR/analytics/pressure-deisa-insitu.py $N_REMAINING_NODES $SCHEFILE $MPI_PROCESSES $EXP_DIR " \
+ && python3 $BASE_ROOTDIR/analytics/pressure-deisa-insitu-avg.py $N_REMAINING_NODES $SCHEFILE $MPI_PROCESSES $EXP_DIR " \
   2>./errors/pressure-deisa.e &
 
 ANALYTICS_PID=$!

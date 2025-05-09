@@ -94,7 +94,7 @@ export LD_LIBRARY_PATH=$GUIX_ENVIRONMENT/lib
 
 mpirun -x PYTHONPATH -x VIRTUAL_ENV -x VIRTUAL_ENV_PROMPT -x LD_LIBRARY_PATH \
   --report-bindings --host ${HEAD_NODE}:1 \
-  bash -c "source $BASE_ROOTDIR/.venv/bin/activate && python3 $BASE_ROOTDIR/analytics/pressure-doreisa.py" \
+  bash -c "source $BASE_ROOTDIR/.venv/bin/activate && python3 $BASE_ROOTDIR/analytics/pressure-doreisa-derivative.py" \
   2>./errors/pressure-doreisa.e &
 
 sleep 15

@@ -21,7 +21,11 @@ echo "Starting bench for doreisa..."
 #Adapted to Nancy gros cluster 36 max process
 for ((i = 0; i < $ITERATION; i++)); do
   ray stop
-  bash $SCRIPT_DIR/start_multinode_doreisa.sh 6 5 >$BENCH_DIR/results/doreisa_6_5_$(date +%Y%m%d_%H%M%S).o
+  bash $SCRIPT_DIR/start_multinode_doreisa_avg.sh 6 5 >$BENCH_DIR/results/doreisa_avg_6_5_$(date +%Y%m%d_%H%M%S).o
+  sleep 10
+  pkill mpirun
+  ray stop
+  bash $SCRIPT_DIR/start_multinode_doreisa_derivative.sh 6 5 >$BENCH_DIR/results/doreisa_derivative_6_5_$(date +%Y%m%d_%H%M%S).o
   sleep 10
   pkill mpirun
 done
