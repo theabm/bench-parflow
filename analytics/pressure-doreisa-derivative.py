@@ -18,7 +18,7 @@ result = []
 def simulation_callback(pressures: list[da.Array], timestep: int):
 
     #Derivative of a specific time step
-    if timestep == 1:
+    if timestep == 2:
         # derivative (central difference) 
         # derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).compute()
         derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).mean().compute()
