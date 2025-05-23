@@ -1,16 +1,12 @@
 # Setting Up The Environment 
 
-## Guix
-The basic requirement is to have guix installed. The testbed for all these scripts is G5K.
-
-Before running the scripts, run this command which will be useful for later:
-
+Load Spack module then activate the environment with root_of_repo/spack.yaml 
 ```bash
-bash root_of_repo/guix/guix-package.sh
-```
-This creates a `profile` and `profile-1-link` which we can use later in the scripts to setup the environment on many nodes.
+module load spack
 
-To build the repository, you need to setup the environment using the following commands:
+spacktivate root_of_repo
+```
+
 ```bash
 guix shell --pure -m root_of_repo/env/guix/manifest-pip.scm
 
