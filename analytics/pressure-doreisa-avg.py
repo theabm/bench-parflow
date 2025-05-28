@@ -18,11 +18,9 @@ result = []
 def simulation_callback(pressures: list[da.Array], timestep: int):
     avg_p = pressures[0].mean().compute()
     result.append(avg_p)
-    #print(f"Simulation step: {timestep}\tAvg. Pressure: {avg_p}", flush=True)
+    print(f"Simulation step: {timestep}\tAvg. Pressure: {avg_p}", flush=True)
     
 # window of size 2
 asyncio.run(doreisa.start(simulation_callback, [
     doreisa.DaskArrayInfo("pressures", window_size=1),
 ]))
-
-print(f"Result : {result}")

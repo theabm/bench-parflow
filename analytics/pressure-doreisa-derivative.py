@@ -23,9 +23,8 @@ def simulation_callback(pressures: list[da.Array], timestep: int):
         # derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).compute()
         derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).mean().compute()
         result.append(derivative_p)
+        print(f"Simulation step: {timestep}\tDerivative of Pressure: {derivative_p}", flush=True)
     
 asyncio.run(doreisa.start(simulation_callback, [
     doreisa.DaskArrayInfo("pressures", window_size=3),
 ]))
-
-print(f"Result : {result}")

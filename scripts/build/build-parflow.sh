@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xue
+set -xe
 
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 export SSL_CERT_DIR=/etc/ssl/certs
@@ -30,6 +30,14 @@ export FC=mpif90
 rm -rf "$PF_DIR"/build "$PF_DIR"/install
 mkdir "$PF_DIR"/install
 
+if [ -n "${GUIX_ENVIRONMENT}" ]; then
+    NETCDF_PATH=$(nc-config --prefix)
+elif [ -n "${SPACK_ENV}" ]; then
+    NETCDF_PATH="$(spack location -i netcdf-c)"
+else
+    echo "No environment detected. Please set GUIX_ENVIRONMENT or SPACK_ENV. Many scripts might fail."
+fi
+
 echo "Building Parflow..."
 
 cmake -DCMAKE_INSTALL_PREFIX="$PF_DIR"/install \
@@ -37,7 +45,7 @@ cmake -DCMAKE_INSTALL_PREFIX="$PF_DIR"/install \
   -DPARFLOW_AMPS_LAYER=mpi1 \
   -DTCL_TCLSH=$TCL_PATH \
   -DPDI_ROOT=$PDI_INSTALL \
-  -DNETCDF_DIR=$(nc-config --prefix) \
+  -DNETCDF_DIR=$NETCDF_PATH \
   -DPARFLOW_ENABLE_HDF5=TRUE \
   -DPARFLOW_AMPS_SEQUENTIAL_IO=on \
   -DPARFLOW_ENABLE_TIMING=TRUE \
@@ -53,3 +61,5 @@ if [ $? -eq 0 ]; then
 else
   echo "Parflow installation failed!"
 fi
+
+set +xe

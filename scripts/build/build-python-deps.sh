@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xue
+set -xe
 
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 export SSL_CERT_DIR=/etc/ssl/certs
@@ -15,6 +15,7 @@ export PYTHONPATH=$DEISA_DIR:$DOREISA_DIR
 
 if [ ! -d "$DEISA_DIR" ];then
 	echo "Downloading Deisa..."
+	# checkout the support_contracts_and_annotations branch which contains the latest changes
 	git clone -b support_contracts_and_annotations https://github.com/pdidev/deisa.git "$DEISA_DIR"
 else
 	echo "Deisa already exists."
@@ -25,7 +26,9 @@ fi
 
 if [ ! -d "$DOREISA_DIR" ];then
 	echo "Downloading doreisa..."
-	git clone https://github.com/AdrienVannson/doreisa.git "$DOREISA_DIR"
+	# checkout the v0.1.1 tag which contains the latest stable release
+	git clone -b v0.1.1 https://github.com/AdrienVannson/doreisa.git "$DOREISA_DIR"
 else
-	echo "doreisa already exists."
+	echo "Doreisa already exists."
 fi
+set +xe

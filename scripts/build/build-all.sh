@@ -5,7 +5,7 @@
 # then activate the .venv using
 # source .venv/bin/activate
 
-set -xue
+set -xe
 
 # needed because pure guix shell does not set these
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
@@ -24,9 +24,9 @@ TCL_PATH=$(which tclsh8.6)
 source ${BASE_ROOTDIR}/scripts/build/build-pdi.sh
 
 # Build Deisa and DoReisa
-source ${BASE_ROOTDIR}/scripts/build/build-python.sh
+source ${BASE_ROOTDIR}/scripts/build/build-python-deps.sh
 
 # Build Parflow
 source ${BASE_ROOTDIR}/scripts/build/build-parflow.sh
 
-set +xeu
+set +xe

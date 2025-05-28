@@ -79,7 +79,7 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
     derivative_p = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean()
     
     #Submit tasks graphs to the scheduler
-    sum = sum_p.persist();
+    sum = sum_p.persist()
     std = std_p.persist()
     integral = integral_p.persist()
     derivative = derivative_p.persist()

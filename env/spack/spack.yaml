@@ -1,0 +1,30 @@
+# This is a Spack Environment file.
+#
+# It describes a set of packages to be installed, along with
+# configuration settings.
+spack:
+  # add package specs to the `specs` list
+  #packages:
+  #  all:
+  #    require: target=x86_64
+  specs:
+  - cmake
+  - hdf5
+  - libyaml
+  - openmpi
+  - python
+  - py-dask @2024.7.1
+  - py-ray
+  - py-distributed @2024.7.1
+  - py-h5py
+  - py-graphviz
+  - py-pandas
+  - protobuf @3.20
+  - tcl
+  - netcdf-c +parallel-netcdf
+  - py-bokeh
+  view: true
+  concretizer:
+    unify: true
+  repos:
+  - /home/abermeom/parflow_pdi_update/env/spack/spack.numpex

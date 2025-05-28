@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -xeu
+set -xe
 
 # --------------------------------------------------------
 # 		NODE & RESOURCE ALLOCATION
@@ -31,8 +31,6 @@ export PARFLOW_DIR=$PF_DIR/install
 PDIV=1.8.3
 export PDI_INSTALL=${BASE_ROOTDIR}/pdi-$PDIV/install
 
-PROFILE=$BASE_ROOTDIR/env/guix/profile
-
 echo Launching Simulation...
 
 CASE_NAME="clayL"
@@ -52,11 +50,22 @@ mkdir ./errors
 CASE=${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}
 tclsh ${CASE_NAME}.tcl ${xsplit} ${ysplit} "${nodes}" ${cells}
 
+if [ -n "${SPACK_ENV}" ]; then
+cat > "./activate_env.sh" << 'EOF'
+#!/usr/bin/env bash
+
+SPACK_ENV=$1/env/spack
+spack env activate $SPACK_ENV
+EOF
+else
+    echo "No environment detected. Please set GUIX_ENVIRONMENT or SPACK_ENV. Many scripts might fail."
+fi
+
 mpirun --host $(printf "%s:$MPI_PROCESSES," "${NODES[@]}" | sed 's/,$//') \
-       bash -c "export GUIX_PROFILE=$PROFILE && source $PROFILE/etc/profile && source $BASE_ROOTDIR/.venv/bin/activate && ${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE}" \
+       bash -c "source ./activate_env.sh $BASE_ROOTDIR && ${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE}" \
        2>./errors/simulation.e
 
 echo Simulation Finished!
 
 cd "$OLDPWD"
-set +xeu
+set +xe

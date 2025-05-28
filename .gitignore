@@ -1,6 +1,8 @@
 .venv/
 env/guix/profile
 env/guix/profile-1-link
+env/spack/.spack-env/
+env/spack/spack.numpex/
 deisa/
 doreisa/
 parflow-pdi/

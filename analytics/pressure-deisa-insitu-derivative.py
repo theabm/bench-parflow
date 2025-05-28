@@ -11,9 +11,7 @@
 
 import deisa
 from deisa import Deisa
-from dask.distributed import performance_report, wait
-import os
-import yaml
+from dask.distributed import performance_report
 import dask
 import sys
 import time
@@ -63,11 +61,7 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
     timestep = 1 
 
     ##### Derivative At specific Timestep ######
-    derivative_p = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean()
-    derivative = derivative_p.persist()
-    
-    #Submit tasks graphs to the scheduler
-    derivative = derivative.compute()
+    derivative = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean().compute()
 
     end = time.perf_counter()
 
