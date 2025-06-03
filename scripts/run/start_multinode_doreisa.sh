@@ -1,5 +1,7 @@
 #!/usr/bin/env bash 
 
+set -xeu
+
 echo RUNNING: DOREISA
 
 if [[ "$#" -lt 1 ]]; then
@@ -11,12 +13,13 @@ if [[ "$1" == "0" ]]; then
   APP="avg"
 elif [[ "$1" == "1" ]]; then
   APP="derivative"
+elif [[ "$1" == "2" ]]; then
+  APP="toy"
 else
   echo "Error: Argument must be either 0 or 1."
   exit 1
 fi
 
-set -xeu
 
 # --------------------------------------------------------
 # 		NODE & RESOURCE ALLOCATION
@@ -102,7 +105,7 @@ if [ -n "${SPACK_ENV}" ]; then
 cat > "./activate_env.sh" << 'EOF'
 #!/usr/bin/env bash
 
-source $1/spack/share/spack/setup-env.sh
+source $1/../spack/share/spack/setup-env.sh
 
 SPACK_ENV=$1/env/spack
 spack env activate $SPACK_ENV

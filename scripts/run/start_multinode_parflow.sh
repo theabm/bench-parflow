@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xe
+set -xeu
 
 # --------------------------------------------------------
 # 		NODE & RESOURCE ALLOCATION
@@ -54,6 +54,8 @@ if [ -n "${SPACK_ENV}" ]; then
 cat > "./activate_env.sh" << 'EOF'
 #!/usr/bin/env bash
 
+source $1/../spack/share/spack/setup-env.sh
+
 SPACK_ENV=$1/env/spack
 spack env activate $SPACK_ENV
 EOF
@@ -68,4 +70,4 @@ mpirun --host $(printf "%s:$MPI_PROCESSES," "${NODES[@]}" | sed 's/,$//') \
 echo Simulation Finished!
 
 cd "$OLDPWD"
-set +xe
+set +xeu

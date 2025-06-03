@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -xe
+set -xeu
 
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 export SSL_CERT_DIR=/etc/ssl/certs
@@ -26,17 +26,8 @@ fi
 rm -rf "$PDI_DIR"/install "$PDI_DIR"/build
 mkdir "$PDI_DIR"/install
 
-if [ -n "${GUIX_ENVIRONMENT}" ]; then
-    PYTHON3_EXECUTABLE=$BASE_ROOTDIR/.venv/bin/python3
-elif [ -n "${SPACK_ENV}" ]; then
-    PYTHON3_EXECUTABLE="$(spack location -i python@3.12)"/bin/python3
-else
-    echo "No environment detected. Please set GUIX_ENVIRONMENT or SPACK_ENV. Many scripts might fail."
-fi
-
 echo "Building PDI..."
-cmake -DPython3_EXECUTABLE=$PYTHON3_EXECUTABLE \
- -DBUILD_PYTHON=ON -DBUILD_PYCALL_PLUGIN=ON -DCMAKE_INSTALL_PREFIX="$PDI_DIR"/install \
+cmake -DBUILD_PYTHON=ON -DBUILD_PYCALL_PLUGIN=ON -DCMAKE_INSTALL_PREFIX="$PDI_DIR"/install \
  -DBUILD_BENCHMARKING=OFF -DBUILD_DECL_NETCDF_PLUGIN=OFF -DBUILD_FORTRAN=OFF -DBUILD_NETCDF_PARALLEL=OFF \
  -DBUILD_SET_VALUE_PLUGIN=OFF -DBUILD_USER_CODE_PLUGIN=OFF \
  -S "$PDI_DIR" -B "$PDI_DIR"/build
@@ -50,5 +41,4 @@ else
         echo "Parflow build failed!"
 fi
 
-set +xe
-
+set +xeu

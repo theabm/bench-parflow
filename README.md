@@ -7,7 +7,7 @@ This repository aggreggates all the tools needed for running and benchmarking in
 Below is the overall structure of the project. Each directory has more details. 
 
 ### env
-- `guix/`: contains all the scripts needed to build the environment for building the repository using Guix.
+- `spack/`: contains all the scripts needed to build the environment for building the repository using Spack.
 
 ### scripts
 - `build/`: contains all the scripts needed to build everything properly. 

@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -xe
+set -xeu
 
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 export SSL_CERT_DIR=/etc/ssl/certs
@@ -31,4 +31,4 @@ if [ ! -d "$DOREISA_DIR" ];then
 else
 	echo "Doreisa already exists."
 fi
-set +xe
+set +xeu

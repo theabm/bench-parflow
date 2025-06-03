@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -xe
+set -xeu
 
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 export SSL_CERT_DIR=/etc/ssl/certs
@@ -30,9 +30,7 @@ export FC=mpif90
 rm -rf "$PF_DIR"/build "$PF_DIR"/install
 mkdir "$PF_DIR"/install
 
-if [ -n "${GUIX_ENVIRONMENT}" ]; then
-    NETCDF_PATH=$(nc-config --prefix)
-elif [ -n "${SPACK_ENV}" ]; then
+if [ -n "${SPACK_ENV}" ]; then
     NETCDF_PATH="$(spack location -i netcdf-c)"
 else
     echo "No environment detected. Please set GUIX_ENVIRONMENT or SPACK_ENV. Many scripts might fail."
@@ -62,4 +60,4 @@ else
   echo "Parflow installation failed!"
 fi
 
-set +xe
+set +xeu
