@@ -2,9 +2,6 @@
 
 set -xeu
 
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-export SSL_CERT_DIR=/etc/ssl/certs
-
 BASE_ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 
 DEISA_DIR=${BASE_ROOTDIR}/deisa

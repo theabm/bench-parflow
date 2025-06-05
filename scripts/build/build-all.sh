@@ -2,10 +2,6 @@
 
 set -xeu
 
-# needed because pure guix shell does not set these
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-export SSL_CERT_DIR=/etc/ssl/certs
-
 # Base root dir of project
 export BASE_ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 
