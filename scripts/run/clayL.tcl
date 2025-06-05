@@ -125,7 +125,7 @@ pfset Gravity				1.0
 # Setup timing info
 #-----------------------------------------------------------------------------
 set time 1.
-set fac 2.0
+set fac 9.0
 pfset TimingInfo.BaseUnit               1.0
 pfset TimingInfo.StartCount             0
 pfset TimingInfo.StartTime              0.0

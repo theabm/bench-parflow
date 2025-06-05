@@ -49,6 +49,11 @@ analytics = Deisa(scheduler_file_name=scheduler_file_name,
 
 client = analytics.client
 
+def derivative(arr):
+    return arr[2:]-arr[:-2])/4
+
+
+
 with performance_report(filename="dask-report.html"), dask.config.set( # type: ignore
     array_optimize=None
 ):
@@ -56,17 +61,21 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
     analytics.ready()
 
     start = time.perf_counter()
-    
-    #select specific timestep
-    timestep = 1 
-
-    ##### Derivative At specific Timestep ######
-    derivative = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean().compute()
-
+    d = derivative(p)
+    d = d.mean() 
     end = time.perf_counter()
 
-    print(f"DERIVATIVE : {derivative}, ANALYTICS TIME : {end - start} seconds")
 
-print("Done", flush=True)
+    start2 = time.perf_counter()
+    d = d.compute()
+    end2 = time.perf_counter()
+    # derivative = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean().compute()
+
+
+    print(f"""DERIVATIVE : {derivative}, 
+            ANALYTICS TIME : {end2 - start},
+            time graph mean: {end - start},
+            time compute: {end2 - start2}""", flush = True)
+
 analytics.wait_for_last_bridge_and_shutdown()
 
