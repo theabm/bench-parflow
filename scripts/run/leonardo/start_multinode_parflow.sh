@@ -43,7 +43,7 @@ cells=240  # Total number of cells along each dimension per node (square problem
 nodes=$TOTAL_NODES
 MPI_PROCESSES=$((xsplit * ysplit))
 
-EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_$(date +%Y%m%d_%H%M%S)"
+EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$EXP_DIR"
 cd "$EXP_DIR"
 cp "$PF_DIR"/pfsimulator/third_party/pdi/conf.yml "$EXP_DIR"/conf.yml

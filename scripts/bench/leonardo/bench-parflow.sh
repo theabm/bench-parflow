@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name=doreisa
+#SBATCH --job-name=parflow
 #SBATCH --time=00:12:00
-#SBATCH --nodes=5
+#SBATCH --nodes=4
 #SBATCH --exclusive
 #SBATCH --partition=boost_usr_prod
 #SBATCH --qos=normal
@@ -14,5 +14,4 @@
 
 # boost partition 2 cpu per node with 32 cores per cpu
 
-bash ./scripts/run/leonardo/start_multinode_doreisa.sh 0
-
+bash ./scripts/run/leonardo/start_multinode_parflow.sh
