@@ -62,6 +62,12 @@ SPACK_ENV=$1/env/spack
 spack env activate $SPACK_ENV
 EOF
 
+# Start memory logger on every node - cpu 0 and 1 is dedicated only to this
+srun --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=2 bash -c "
+    source ./activate_env.sh $BASE_ROOTDIR
+    python3 $BASE_ROOTDIR/utils/memory-logger.py --interval 30 
+"&
+
 srun --cpu-bind=verbose,core  --nodes=$TOTAL_NODES \
 	--ntasks-per-node=$MPI_PROCESSES --cpus-per-task=1 \
   	bash -c "

@@ -121,12 +121,18 @@ EOF
 HEAD_NODE_IP=$(srun --overlap --nodes=1 --nodelist=$HEAD_NODE --ntasks-per-node=1 bash -c 'ip -o -4 addr show ib0 | awk "{print \$4}" | cut -d/ -f1')
 echo "Head node IP: $HEAD_NODE_IP"
 
-# Start the head node
-srun  --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=5 bash -c "
+# Start memory logger on every node - cpu 0 and 1 is dedicated only to this
+srun  --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=2 bash -c "
+    source ./activate_env.sh $BASE_ROOTDIR
+    python3 $BASE_ROOTDIR/utils/memory-logger.py --interval 30 
+"&
+
+# Start the head node -- will have 20 cores in the node
+srun  --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=20 bash -c "
     ulimit -n 65535
     export OPENBLAS_NUM_THREADS=1
     source ./activate_env.sh $BASE_ROOTDIR
-    ray start --head --num-cpus=5 --node-ip-address=$HEAD_NODE_IP --port=$PORT --disable-usage-stats --block
+    ray start --head --num-cpus=20 --node-ip-address=$HEAD_NODE_IP --port=$PORT --disable-usage-stats --block
 " 2>./errors/ray-head.e &
 
 end=$(date +%s)
@@ -141,7 +147,7 @@ end=$(date +%s)
 ANALYTICS_START=$(expr "$end" - "$start")
 echo Launching Analytics at "$ANALYTICS_START" seconds.
 
-srun --cpu-bind=verbose,core  --nodes=1 --nodelist="${HEAD_NODE}" --ntasks=1 --cpus-per-task=15 bash -c "
+srun --cpu-bind=verbose,core  --nodes=1 --nodelist="${HEAD_NODE}" --ntasks=1 --cpus-per-task=10 bash -c "
 	source ./activate_env.sh $BASE_ROOTDIR
 	python3 $BASE_ROOTDIR/analytics/pressure-doreisa-$APP.py
 " 2>./errors/pressure-doreisa.e &
