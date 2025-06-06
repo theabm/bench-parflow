@@ -37,7 +37,7 @@ def simulation_callback(pressures: list[da.Array], timestep: int):
     result.append(avg_p)
 
     if timestep == 9:
-        print(f"{timings_graph} {timings_compute}", flush = True)
+        print(f"-TIMINGS-\nTIMINGS GRAPH:\n{timings_graph}\nTIMINGS_COMPUTE:\n{timings_compute}", flush = True)
 
     #print(f"Simulation step: {timestep}\tAvg. Pressure: {avg_p}", flush=True)
     

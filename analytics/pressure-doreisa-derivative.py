@@ -22,12 +22,10 @@ def simulation_callback(pressures: list[da.Array], timestep: int):
 
     #Derivative of a specific time step
     if timestep >= 2:
-        # derivative (central difference) 
-        # derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).compute()
 
         start = time.perf_counter()
 
-        derivative_p = ((pressures[timestep + 1] - pressures[timestep - 1])/(2 * 2)).mean()
+        derivative_p = ((pressures[2] - pressures[0])/(2 * 2)).mean()
 
         end = time.perf_counter()
         timings_graph.append(end-start)
@@ -43,7 +41,7 @@ def simulation_callback(pressures: list[da.Array], timestep: int):
         result.append(derivative_p)
 
         if timestep == 9: 
-            print(f"{timings_graph} {timings_compute}", flush = True)
+            print(f"-TIMINGS-\nTIMINGS GRAPH:\n{timings_graph}\nTIMINGS_COMPUTE:\n{timings_compute}", flush = True)
 
 
         #print(f"Simulation step: {timestep}\tDerivative of Pressure: {derivative_p}", flush=True)
