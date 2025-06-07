@@ -1,0 +1,2 @@
+experiment_name,num_ranks,num_steps,simulation_total_runtime,avg_init_time,var_init_time,avg_publish_time_step_0,avg_publish_time_step_1,avg_publish_time_step_2,avg_publish_time_one_step,avg_time_pdi,avg_graph_formation_time,avg_graph_compute_time,total_analytics_time
+exp1,4,3,122.8,1.0,0.26666666666666666,0.95,1.15,1.25,1.1166666666666667,4.35,0.2,0.5,2.1

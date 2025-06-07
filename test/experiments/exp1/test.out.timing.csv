@@ -1,0 +1,3 @@
+Timer,Time (s),MFLOPS (mops/s),FLOP (op)
+t1, 80, 1, 1
+Total Runtime,122.800,-nan,0

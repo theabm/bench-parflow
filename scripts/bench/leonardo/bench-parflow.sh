@@ -14,4 +14,9 @@
 
 # boost partition 2 cpu per node with 32 cores per cpu
 
+mkdir -p ./experiments-parflow/
+
 bash ./scripts/run/leonardo/start_multinode_parflow.sh
+
+mv R-${SLURM_JOB_NAME}-${SLURM_JOB_ID}* clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_*/
+mv clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_* experiments-parflow/

@@ -1,0 +1,41 @@
+Waiting to start the simulation...
+Simulation started!
+-TIMINGS-
+TIMINGS GRAPH:
+[0.1, 0.2, 0.3]
+TIMINGS_COMPUTE:
+[0.4, 0.5, 0.6]
+Init rank 0 took 0.4
+Publish rank 0 at step 0 took 1.0
+Publish rank 0 at step 1 took 1.2
+Publish rank 0 at step 2 took 1.6
+Init rank 1 took 1.2
+Publish rank 1 at step 0 took 0.8
+Publish rank 1 at step 1 took 1.2
+Publish rank 1 at step 2 took 1.6
+Init rank 2 took 0.8
+Publish rank 2 at step 0 took 1.2
+Publish rank 2 at step 1 took 1.2
+Publish rank 2 at step 2 took 0.4
+Init rank 3 took 1.6
+Publish rank 3 at step 0 took 0.8
+Publish rank 3 at step 1 took 1.0
+Publish rank 3 at step 2 took 1.4
+Node 0: Using process grid (10,10,1)
+Node 0: Unable to add metadata for "downward shortwave radiation"; Unhandled CLM Met forcing 0.
+Node 0: Unable to add metadata for "downward longwave radiation"; Unhandled CLM Met forcing 0.
+Node 0: Unable to add metadata for "precipitation"; Unhandled CLM Met forcing 0.
+Node 0: Unable to add metadata for "temperature"; Unhandled CLM Met forcing 0.
+Node 0: Unable to add metadata for "wind velocity"; Unhandled CLM Met forcing 0.
+Node 0: Unable to add metadata for "atmospheric pressure"; Unhandled CLM Met forcing 0.
+Node 0: Unable to add metadata for "specific humidity"; Unhandled CLM Met forcing 0.
+Node 0: Well Information
+Node 0: No Wells.
+Node 0: Well Information
+Node 0: No Wells.
+Node 0: Problem solved 
+Simulation Finished! at 280 seconds.
+Waiting on analytics..
+Analytics Finished!
+Cleaning up..
+

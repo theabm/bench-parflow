@@ -14,5 +14,11 @@
 
 # boost partition 2 cpu per node with 32 cores per cpu
 
+mkdir -p ./experiments-doreisa/
+
 bash ./scripts/run/leonardo/start_multinode_doreisa.sh 0
+
+mv R-${SLURM_JOB_NAME}-${SLURM_JOB_ID}* clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_*/
+mv clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_* experiments-doreisa/
+
 
