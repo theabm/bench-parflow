@@ -8,6 +8,8 @@ doreisa/
 parflow-pdi/
 pdi-1.8.3/
 clayL_*/
-doreisa-experiments/
-parflow-experiments/
+experiments-doreisa/
+experiments-deisa/
+experiments-parflow/
 test/__pycache__/
+
