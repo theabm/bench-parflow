@@ -61,7 +61,7 @@ echo SIM_NODES "${SIM_NODES[*]}"
 echo N_SIM_NODES "${N_SIM_NODES}"
 
 # --------------------------------------------------------
-# 				ENVIRONMENT SETUP
+#			ENVIRONMENT SETUP
 # --------------------------------------------------------
 
 # Update BASE_ROOTDIR to point to the root of the project
@@ -99,7 +99,8 @@ cp "$PF_DIR"/pfsimulator/third_party/pdi/conf-doreisa.yml "$EXP_DIR"/conf.yml
 cp "$BASE_ROOTDIR"/scripts/run/clayL.tcl "$EXP_DIR"/clayL.tcl
 mkdir ./errors
 
-# -------------------------------------------------------- Time measurement
+# -------------------------------------------------------- 
+#			Time measurement
 # --------------------------------------------------------
 start=$(date +%s)
 
