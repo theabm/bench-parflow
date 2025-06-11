@@ -4,6 +4,7 @@ Batch Experiment Timing Parser
 
 This script processes multiple experiments in a directory structure and extracts timing
 metrics from distributed MPI applications with Ray components. Results are saved to CSV.
+Supports both regular experiments and DEISA experiments with different output formats.
 """
 
 import re
@@ -33,7 +34,8 @@ class ExperimentResult(NamedTuple):
 
 
 class TimingParser:
-    def __init__(self):
+    def __init__(self, is_deisa: bool = False):
+        self.is_deisa = is_deisa
         self.reset()
 
     def reset(self):
@@ -64,38 +66,77 @@ class TimingParser:
             with open(log_file_path, "r") as file:
                 content = file.read()
 
-            # Extract TIMINGS_GRAPH
-            graph_match = re.search(r"TIMINGS GRAPH:\s*\[([\d\., ]+)\]", content)
-            if graph_match:
-                self.timings_graph = [float(x.strip()) for x in graph_match.group(1).split(",")]
-
-            # Extract TIMINGS_COMPUTE
-            compute_match = re.search(r"TIMINGS_COMPUTE:\s*\[([\d\., ]+)\]", content)
-            if compute_match:
-                self.timings_compute = [float(x.strip()) for x in compute_match.group(1).split(",")]
-
-            # Extract initialization times
-            init_pattern = r"Init rank (\d+) took (\d+(?:\.\d+)?)"
-            init_matches = re.findall(init_pattern, content)
-            for rank, time_str in init_matches:
-                self.init_times.append(float(time_str))
-
-            # Extract publish times
-            publish_pattern = r"Publish rank (\d+) at step (\d+) took (\d+(?:\.\d+)?)"
-            publish_matches = re.findall(publish_pattern, content)
-            for rank, step, time_str in publish_matches:
-                rank = int(rank)
-                step = int(step)
-                time_val = float(time_str)
-
-                if rank not in self.publish_times_by_rank:
-                    self.publish_times_by_rank[rank] = {}
-                self.publish_times_by_rank[rank][step] = time_val
+            if self.is_deisa:
+                self._parse_deisa_format(content)
+            else:
+                self._parse_regular_format(content)
 
         except FileNotFoundError:
             print(f"    ❌ Log file not found: {log_file_path}")
         except Exception as e:
             print(f"    ❌ Error parsing log file: {e}")
+
+    def _parse_regular_format(self, content: str) -> None:
+        """Parse regular format (parflow/doreisa)."""
+        # Extract TIMINGS_GRAPH
+        graph_match = re.search(r"TIMINGS GRAPH:\s*\[([\d\., ]+)\]", content)
+        if graph_match:
+            self.timings_graph = [float(x.strip()) for x in graph_match.group(1).split(",")]
+
+        # Extract TIMINGS_COMPUTE
+        compute_match = re.search(r"TIMINGS_COMPUTE:\s*\[([\d\., ]+)\]", content)
+        if compute_match:
+            self.timings_compute = [float(x.strip()) for x in compute_match.group(1).split(",")]
+
+        # Extract initialization times
+        init_pattern = r"Init rank (\d+) took (\d+(?:\.\d+)?)"
+        init_matches = re.findall(init_pattern, content)
+        for rank, time_str in init_matches:
+            self.init_times.append(float(time_str))
+
+        # Extract publish times
+        publish_pattern = r"Publish rank (\d+) at step (\d+) took (\d+(?:\.\d+)?)"
+        publish_matches = re.findall(publish_pattern, content)
+        for rank, step, time_str in publish_matches:
+            rank = int(rank)
+            step = int(step)
+            time_val = float(time_str)
+
+            if rank not in self.publish_times_by_rank:
+                self.publish_times_by_rank[rank] = {}
+            self.publish_times_by_rank[rank][step] = time_val
+
+    def _parse_deisa_format(self, content: str) -> None:
+        """Parse DEISA format."""
+        # Extract time graph mean (already averaged)
+        graph_match = re.search(r"time graph mean:\s*(\d+(?:\.\d+)?)", content)
+        if graph_match:
+            # Store as single value since it's already averaged
+            self.timings_graph = [float(graph_match.group(1))]
+
+        # Extract time compute (already final time)
+        compute_match = re.search(r"time compute:\s*(\d+(?:\.\d+)?)", content)
+        if compute_match:
+            # Store as single value since it's already the final time
+            self.timings_compute = [float(compute_match.group(1))]
+
+        # Extract initialization times
+        init_pattern = r"Init from rank (\d+) took (\d+(?:\.\d+)?)"
+        init_matches = re.findall(init_pattern, content)
+        for rank, time_str in init_matches:
+            self.init_times.append(float(time_str))
+
+        # Extract publish times
+        publish_pattern = r"Publish from rank (\d+) at step (\d+) took (\d+(?:\.\d+)?)"
+        publish_matches = re.findall(publish_pattern, content)
+        for rank, step, time_str in publish_matches:
+            rank = int(rank)
+            step = int(step)
+            time_val = float(time_str)
+
+            if rank not in self.publish_times_by_rank:
+                self.publish_times_by_rank[rank] = {}
+            self.publish_times_by_rank[rank][step] = time_val
 
     def get_num_ranks(self) -> int:
         """Calculate the number of ranks from the parsed data."""
@@ -170,23 +211,44 @@ class TimingParser:
             metrics["avg_time_pdi"] = None
 
         # Analytics timing calculations
-        # 1. Average time to form the graph (average across the 9 steps)
-        if self.timings_graph:
-            metrics["avg_graph_formation_time"] = statistics.mean(self.timings_graph)
-        else:
-            metrics["avg_graph_formation_time"] = None
+        if self.is_deisa:
+            # For DEISA: values are already averaged/final
+            # 1. Graph formation time (already averaged)
+            if self.timings_graph:
+                metrics["avg_graph_formation_time"] = self.timings_graph[0]
+            else:
+                metrics["avg_graph_formation_time"] = None
 
-        # 2. Average time to compute the graph (average across the 9 steps)
-        if self.timings_compute:
-            metrics["avg_graph_compute_time"] = statistics.mean(self.timings_compute)
-        else:
-            metrics["avg_graph_compute_time"] = None
+            # 2. Graph compute time (already final)
+            if self.timings_compute:
+                metrics["avg_graph_compute_time"] = self.timings_compute[0]
+            else:
+                metrics["avg_graph_compute_time"] = None
 
-        # 3. Sum of the two lists: total time of the main analytics
-        if self.timings_graph and self.timings_compute:
-            metrics["total_analytics_time"] = sum(self.timings_graph) + sum(self.timings_compute)
+            # 3. Total analytics time
+            if self.timings_graph and self.timings_compute:
+                metrics["total_analytics_time"] = self.timings_graph[0] + self.timings_compute[0]
+            else:
+                metrics["total_analytics_time"] = None
         else:
-            metrics["total_analytics_time"] = None
+            # For regular experiments: calculate averages and sums
+            # 1. Average time to form the graph (average across the 9 steps)
+            if self.timings_graph:
+                metrics["avg_graph_formation_time"] = statistics.mean(self.timings_graph)
+            else:
+                metrics["avg_graph_formation_time"] = None
+
+            # 2. Average time to compute the graph (average across the 9 steps)
+            if self.timings_compute:
+                metrics["avg_graph_compute_time"] = statistics.mean(self.timings_compute)
+            else:
+                metrics["avg_graph_compute_time"] = None
+
+            # 3. Sum of the two lists: total time of the main analytics
+            if self.timings_graph and self.timings_compute:
+                metrics["total_analytics_time"] = sum(self.timings_graph) + sum(self.timings_compute)
+            else:
+                metrics["total_analytics_time"] = None
 
         return metrics
 
@@ -194,8 +256,11 @@ class TimingParser:
 class BatchExperimentProcessor:
     def __init__(self, experiments_dir: str):
         self.experiments_dir = Path(experiments_dir)
-        self.parser = TimingParser()
         self.results = []
+        # Detect if this is a DEISA experiment directory
+        self.is_deisa = "deisa" in str(self.experiments_dir).lower()
+        if self.is_deisa:
+            print(f"🧬 Detected DEISA experiment format")
 
     def find_experiment_directories(self) -> List[Path]:
         """Find all experiment directories."""
@@ -224,8 +289,8 @@ class BatchExperimentProcessor:
         experiment_name = experiment_dir.name
         print(f"  📁 Processing experiment: {experiment_name}")
 
-        # Reset parser for new experiment
-        self.parser.reset()
+        # Create parser with appropriate format detection
+        parser = TimingParser(is_deisa=self.is_deisa)
 
         # Find files
         r_file, csv_file = self.find_files_in_experiment(experiment_dir)
@@ -242,11 +307,11 @@ class BatchExperimentProcessor:
         print(f"    📄 Found CSV file: {Path(csv_file).name}")
 
         # Parse files
-        self.parser.parse_csv_file(csv_file)
-        self.parser.parse_log_file(r_file)
+        parser.parse_csv_file(csv_file)
+        parser.parse_log_file(r_file)
 
         # Calculate metrics
-        metrics = self.parser.calculate_metrics()
+        metrics = parser.calculate_metrics()
 
         # Extract step-wise publish times
         step_publish_times = {}
@@ -406,6 +471,7 @@ def main():
         epilog="""
 Example usage:
   python timing_parser.py experiments/
+  python timing_parser.py experiments-deisa/
   python timing_parser.py experiments/ --output results.csv
   python timing_parser.py /path/to/experiments --output /path/to/output.csv --verbose
         """,
