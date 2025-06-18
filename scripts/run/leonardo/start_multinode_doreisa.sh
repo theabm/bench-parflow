@@ -36,12 +36,8 @@ TOTAL_NODES=${#NODES[@]}
 echo TOTAL_NODES: "$TOTAL_NODES"
 
 if [[ $TOTAL_NODES -eq 1 ]]; then
-  echo "Running with only one node."
-
-  # head node and sim nodes are the same
-  HEAD_NODE=${NODES[0]} 
-  SIM_NODES=("${NODES[@]:0}") 
-  N_SIM_NODES=${#SIM_NODES[@]}
+  echo "Run with at least 2 nodes"
+  exit 1
 else
   echo "Running with more than one node."
 
@@ -81,16 +77,25 @@ DOREISA_DIR=${BASE_ROOTDIR}/doreisa
 export PYTHONPATH=$DOREISA_DIR
 
 CASE_NAME="clayL"
-if [[ "$#" -eq 3 ]]; then
-  xsplit=$2 # Number of MPI tasks per node along the x-axis
-  ysplit=$3 # Number of MPI tasks per node along the y-axis
-else
-  xsplit=5 # Number of MPI tasks per node along the x-axis
-  ysplit=5 # Number of MPI tasks per node along the y-axis
-fi
-cells=240 # Total number of cells along each dimension per node (square problem in x and y dimensions)
+
+xsplit=10 # Number of MPI tasks per node along the x-axis
+ysplit=10 # Number of MPI tasks per node along the y-axis
+
+cells=120 # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$N_SIM_NODES
+# HEAD NODE
+RAY_HEAD_CPUS=55
+ANALYTICS_CPUS=56
+MEM_LOG_CPUS=1
+# ----
+# SUM: 112
+
+# SIM NODES
+RAY_WORKER_CPUS=11
 MPI_PROCESSES=$((xsplit * ysplit))
+# MEM_LOG_CPUS
+# ----
+# SUM: 112
 
 EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$EXP_DIR"
@@ -123,17 +128,17 @@ HEAD_NODE_IP=$(srun --overlap --nodes=1 --nodelist=$HEAD_NODE --ntasks-per-node=
 echo "Head node IP: $HEAD_NODE_IP"
 
 # Start memory logger on every node - cpu 0 and 1 is dedicated only to this
-srun  --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=2 bash -c "
+srun  --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=$MEM_LOG_CPUS bash -c "
     source ./activate_env.sh $BASE_ROOTDIR
     python3 $BASE_ROOTDIR/utils/memory-logger.py --interval 30 
 "&
 
 # Start the head node -- will have 20 cores in the node
-srun  --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=20 bash -c "
+srun  --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=$RAY_HEAD_CPUS bash -c "
     ulimit -n 65535
     export OPENBLAS_NUM_THREADS=1
     source ./activate_env.sh $BASE_ROOTDIR
-    ray start --head --num-cpus=20 --node-ip-address=$HEAD_NODE_IP --port=$PORT --disable-usage-stats --block
+    ray start --head --num-cpus=1 --node-ip-address=$HEAD_NODE_IP --port=$PORT --disable-usage-stats --block
 " 2>./errors/ray-head.e &
 
 end=$(date +%s)
@@ -148,7 +153,7 @@ end=$(date +%s)
 ANALYTICS_START=$(expr "$end" - "$start")
 echo Launching Analytics at "$ANALYTICS_START" seconds.
 
-srun --cpu-bind=verbose,core  --nodes=1 --nodelist="${HEAD_NODE}" --ntasks=1 --cpus-per-task=10 bash -c "
+srun --cpu-bind=verbose,core  --nodes=1 --nodelist="${HEAD_NODE}" --ntasks=1 --cpus-per-task=$ANALYTICS_CPUS bash -c "
 	source ./activate_env.sh $BASE_ROOTDIR
 	python3 $BASE_ROOTDIR/analytics/pressure-doreisa-$APP.py
 " 2>./errors/pressure-doreisa.e &
@@ -171,14 +176,14 @@ NODELIST=$(printf "%s," "${SIM_NODES[@]}" | sed 's/,$//')
 if [ "$TOTAL_NODES" -gt 1 ]; then
   # ray start and connect to head node
   srun --cpu-bind=verbose,core --nodes=$N_SIM_NODES \
-  -x $HEAD_NODE --ntasks=$N_SIM_NODES --ntasks-per-node=1 --cpus-per-task=5 \
+  -x $HEAD_NODE --ntasks=$N_SIM_NODES --ntasks-per-node=1 --cpus-per-task=$RAY_WORKER_CPUS \
   bash -c "
   ulimit -n 65535
   export OPENBLAS_NUM_THREADS=1
   node_ip=\$(ip -o -4 addr show ib0 | awk \"{print \\\$4}\" | cut -d/ -f1)
         echo \"Node IP: \$node_ip\"
   source ./activate_env.sh $BASE_ROOTDIR
-  ray start --address ${HEAD_ADDRESS} --num-cpus=5 --node-ip-address=\$node_ip --block
+  ray start --address ${HEAD_ADDRESS} --num-cpus=$RAY_WORKER_CPUS --node-ip-address=\$node_ip --block
  " 2>./errors/ray-workers.e &
 
   end=$(date +%s)

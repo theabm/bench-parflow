@@ -2,11 +2,11 @@
 
 #SBATCH --job-name=doreisa
 #SBATCH --time=00:12:00
-#SBATCH --nodes=5
+#SBATCH --nodes=2
 #SBATCH --exclusive
-#SBATCH --partition=boost_usr_prod
+#SBATCH --partition=dcgp_usr_prod
 #SBATCH --qos=normal
-#SBATCH --account=EUHPC_D23_125
+#SBATCH --account=EUHPC_D23_125_0
 
 # it is useful to submit a job using something like 
 # sbatch -o \"R-%x-%j-$(date +%Y%m%d%H%M%S).o\" -e \"R-%x-%j-$(date +%Y%m%d%H%M%S).e\" myscript.sh
