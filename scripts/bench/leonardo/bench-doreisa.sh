@@ -14,6 +14,8 @@
 
 # boost partition 2 cpu per node with 32 cores per cpu
 
+start_script=$(date +%s)
+
 mkdir -p ./experiments-doreisa/
 
 bash ./scripts/run/leonardo/start_multinode_doreisa.sh 0
@@ -21,4 +23,7 @@ bash ./scripts/run/leonardo/start_multinode_doreisa.sh 0
 mv R-${SLURM_JOB_NAME}-${SLURM_JOB_ID}* clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_*/
 mv clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_* experiments-doreisa/
 
+end_script=$(date +%s)
+
+echo ENTIRE SCRIPT TIME $(expr $end_script - $start_script) seconds.
 

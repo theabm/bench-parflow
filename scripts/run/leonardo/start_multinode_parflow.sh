@@ -37,9 +37,9 @@ export PDI_INSTALL=${BASE_ROOTDIR}/pdi-$PDIV/install
 echo Launching Simulation...
 
 CASE_NAME="clayL"
-xsplit=5  # Number of MPI tasks per node along the x-axis
-ysplit=5  # Number of MPI tasks per node along the y-axis
-cells=240  # Total number of cells along each dimension per node (square problem in x and y dimensions)
+xsplit=10  # Number of MPI tasks per node along the x-axis
+ysplit=10  # Number of MPI tasks per node along the y-axis
+cells=120  # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$TOTAL_NODES
 MPI_PROCESSES=$((xsplit * ysplit))
 
@@ -63,7 +63,7 @@ spack env activate $SPACK_ENV
 EOF
 
 # Start memory logger on every node - cpu 0 and 1 is dedicated only to this
-srun --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=2 bash -c "
+srun --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=1 bash -c "
     source ./activate_env.sh $BASE_ROOTDIR
     python3 $BASE_ROOTDIR/utils/memory-logger.py --interval 30 
 "&
