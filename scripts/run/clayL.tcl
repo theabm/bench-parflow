@@ -296,7 +296,7 @@ pfset Solver.WritePDISlopes                             False
 pfset Solver.WritePDIPressure                           True
 pfset Solver.WritePDISpecificStorage                    False
 pfset Solver.WritePDIVelocities                         False
-pfset Solver.WritePDISaturation                         False
+pfset Solver.WritePDISaturation                         True
 pfset Solver.WritePDIMask                               False
 pfset Solver.WritePDIDZMultiplier                       False
 pfset Solver.WritePDIEvapTransSum                       False
