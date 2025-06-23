@@ -23,8 +23,8 @@ fi
 
 if [ ! -d "$DOREISA_DIR" ];then
 	echo "Downloading doreisa..."
-	# checkout the v0.1.4 tag which contains the latest stable release
-	git clone -b fix-timestep-multi-array https://github.com/AdrienVannson/doreisa.git "$DOREISA_DIR"
+	# checkout the v0.1.5 tag which contains the latest stable release
+	git clone -b v0.1.5 https://github.com/AdrienVannson/doreisa.git "$DOREISA_DIR"
 else
 	echo "Doreisa already exists."
 fi

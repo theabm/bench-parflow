@@ -80,16 +80,24 @@ export PYTHONPATH=$DEISA_DIR
 SCHEFILE=scheduler.json
 
 CASE_NAME="clayL"
-if [[ "$#" -eq 3 ]]; then
-  xsplit=$2 # Number of MPI tasks per node along the x-axis
-  ysplit=$3 # Number of MPI tasks per node along the y-axis
-else
-  xsplit=5 # Number of MPI tasks per node along the x-axis
-  ysplit=5 # Number of MPI tasks per node along the y-axis
-fi
-cells=240 # Total number of cells along each dimension per node (square problem in x and y dimensions)
+xsplit=10 # Number of MPI tasks per node along the x-axis
+ysplit=10 # Number of MPI tasks per node along the y-axis
+
+cells=120 # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$N_SIM_NODES
+# HEAD NODE
+DASK_SCHEDULER_CPUS=55
+ANALYTICS_CPUS=56
+MEM_LOG_CPUS=1
+# ----
+# SUM: 112
+
+# SIM NODES
+DASK_WORKER_CPUS=11
 MPI_PROCESSES=$((xsplit * ysplit))
+# MEM_LOG_CPUS
+# ----
+# SUM: 112
 
 EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$EXP_DIR"
@@ -137,11 +145,11 @@ source ./activate_env.sh
 # --------------------------------------------------------
 
 # Start memory logger on every node - cpu 0 and 1 is dedicated only to this
-srun --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=2 \
+srun --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=$MEM_LOG_CPUS \
 	python3 $BASE_ROOTDIR/utils/memory-logger.py --interval 30 &
 
 echo "Launching Dask Scheduler on ${HEAD_NODE}..."
-srun --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=20 \
+srun --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=$DASK_SCHEDULER_CPUS \
 	dask scheduler --scheduler-file ./$SCHEFILE 2>./errors/scheduler.e &
 
 # Wait for the scheduler file to be created
@@ -160,7 +168,7 @@ end=$(date +%s)
 ANALYTICS_START=$(expr "$end" - "$start")
 echo Launching Analytics at "$ANALYTICS_START" seconds.
 
-srun --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=10 \
+srun --cpu-bind=verbose,core --nodes=1 --nodelist=$HEAD_NODE --ntasks=1 --cpus-per-task=$ANALYTICS_CPUS \
   	bash -c "
 	python3 $BASE_ROOTDIR/analytics/pressure-deisa-insitu-$APP.py $N_SIM_NODES $SCHEFILE $MPI_PROCESSES $EXP_DIR \
  " 2>./errors/pressure-deisa.e &
@@ -177,7 +185,7 @@ echo "Launching Dask Workers on ${#SIM_NODES[@]} nodes..."
 
 # One Dask Worker per node
 srun --cpu-bind=verbose,core --nodes=$N_SIM_NODES -x $HEAD_NODE \
-	--ntasks=$N_SIM_NODES --ntasks-per-node=1 --cpus-per-task=5\
+	--ntasks=$N_SIM_NODES --ntasks-per-node=1 --cpus-per-task=$DASK_WORKER_CPUS\
 	bash -c "
 	dask worker --worker-port 2000 --scheduler-file ./$SCHEFILE \
 	--local-directory ./workers --nworkers 1 --nthreads 5 \

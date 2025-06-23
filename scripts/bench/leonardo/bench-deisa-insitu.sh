@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=deisa-insitu
 #SBATCH --time=00:12:00
-#SBATCH --nodes=5
+#SBATCH --nodes=2
 #SBATCH --exclusive
 #SBATCH --partition=dcgp_usr_prod
 #SBATCH --qos=normal
@@ -25,5 +25,5 @@ mv clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_* experiments-deisa-insitu/
 
 end_script=$(date +%s)
 
-echo ENTIRE SCRIPT TIME $(expr $end_script - $start_script) seconds.
+echo [SCRIPT] START: $start_script END: $end_script DIFF: $(expr $end_script - $start_script)
 
