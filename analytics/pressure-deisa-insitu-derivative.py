@@ -60,15 +60,15 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
     p = analytics["global_pressure", :, :, :, :]
     analytics.ready()
 
-    start = time.perf_counter()
+    start = time.time()
     d = derivative(p)
     d = d.mean() 
-    end = time.perf_counter()
+    end = time.time()
 
 
-    start2 = time.perf_counter()
+    start2 = time.time()
     d = d.compute()
-    end2 = time.perf_counter()
+    end2 = time.time()
     # derivative = ((p[timestep+1] - p[timestep-1])/(2 * 2)).mean().compute()
 
 

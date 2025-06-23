@@ -4,8 +4,8 @@ set -xeu
 
 echo RUNNING: DOREISA
 
-if [[ "$#" -lt 1 ]]; then
-  echo "Error: An argument (0 or 1) must be provided."
+if [[ "$#" -lt 2 ]]; then
+  echo "Error: A case (0 or 1) and a configuration ID (0 - N) must be provided as arguments."
   exit 1
 fi
 
@@ -97,8 +97,11 @@ MPI_PROCESSES=$((xsplit * ysplit))
 # ----
 # SUM: 112
 
-EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)"
+CONFIG_ID=$2
+EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)_$CONFIG_ID"
 mkdir -p "$EXP_DIR"
+echo "CONFIG_ID : $CONFIG_ID"
+exit 0
 cd "$EXP_DIR"
 cp "$PF_DIR"/pfsimulator/third_party/pdi/conf-doreisa.yml "$EXP_DIR"/conf.yml
 cp "$BASE_ROOTDIR"/scripts/run/clayL.tcl "$EXP_DIR"/clayL.tcl

@@ -59,20 +59,20 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
 
     ###### AVERGARE BY TIMESTEP ######
 
-    start_g = time.perf_counter()
+    start_g = time.time()
     sum_p = p.mean(axis = (1,2,3))
-    end_g = time.perf_counter()
+    end_g = time.time()
     
     #Submit tasks graphs to the scheduler
 
-    start_c = time.perf_counter()
+    start_c = time.time()
     sum_p= sum_p.compute()
-    end_c = time.perf_counter()
+    end_c = time.time()
 
     print(f"[DEISA, 9] START : {start_g} END : {end_c} DIFF : {end_c - start_g}")
     timings_graph = [(start_g, end_g, end_g - start_g)]
     timings_compute = [(start_c, end_c, end_c - start_c)]
-    print(f"[DEISA, LAST STEP] TIMINGS GRAPH:\n{timings_graph}\nTIMINGS COMPUTE:\n{timings_compute}")
+    print(f"[DEISA, LAST STEP]\nTIMINGS GRAPH: {timings_graph}\nTIMINGS COMPUTE: {timings_compute}")
     
 
 analytics.wait_for_last_bridge_and_shutdown()

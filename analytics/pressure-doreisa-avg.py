@@ -26,22 +26,22 @@ def simulation_callback(
     timestep: int
     ):
 
-    start_g = time.perf_counter()
+    start_g = time.time()
 
     avg_p = pressures[0].mean()
     # avg_s = saturations[0].mean()
 
-    end_g = time.perf_counter()
+    end_g = time.time()
 
     time_info = (start_g, end_g, end_g - start_g)
     timings_graph.append(time_info)
 
-    start_c = time.perf_counter()
+    start_c = time.time()
 
     avg_p = avg_p.compute()
     # avg_s = avg_s.compute()
 
-    end_c = time.perf_counter()
+    end_c = time.time()
 
     time_info = (start_c, end_c, end_c - start_c)
     timings_compute.append(time_info)
@@ -49,7 +49,7 @@ def simulation_callback(
     print(f"[DOREISA, {timestep}] START : {start_g} END : {end_c} DIFF : {end_c - start_g}")
 
     if timestep == 9:
-        print(f"[DOREISA, LAST STEP] TIMINGS GRAPH:\n{timings_graph}\nTIMINGS COMPUTE:\n{timings_compute}")
+        print(f"[DOREISA, LAST STEP]\nTIMINGS GRAPH: {timings_graph}\nTIMINGS COMPUTE: {timings_compute}")
 
 # window of size 1
 # if you want to do the preprocessing, you need to pass it as an argument

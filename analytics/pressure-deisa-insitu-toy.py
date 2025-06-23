@@ -56,7 +56,7 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
 ):
     p = analytics["global_pressure", :, :, :, :]
     analytics.ready()
-    start = time.perf_counter()
+    start = time.time()
 
     #Computing number of cells
     totcells = 1
@@ -97,7 +97,7 @@ with performance_report(filename="dask-report.html"), dask.config.set( # type: i
 
     derivative = derivative.compute()
     #print(f"Derivative at timestep {timestep}: {derivative} in {end - start} sec")
-    end = time.perf_counter()
+    end = time.time()
     print(f"ANALYTICS TIME : {end - start} seconds")
 
 print("Done", flush=True)

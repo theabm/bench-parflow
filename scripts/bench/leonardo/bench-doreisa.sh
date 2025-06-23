@@ -18,7 +18,14 @@ start_script=$(date +%s)
 
 mkdir -p ./experiments-doreisa/
 
-bash ./scripts/run/leonardo/start_multinode_doreisa.sh 0
+
+if [[ "$#" -lt 1 ]]; then
+  echo "Error: An ID for the configuration must be provided."
+  exit 1
+fi
+CONFIG_ID=$1
+
+bash ./scripts/run/leonardo/start_multinode_doreisa.sh 0 $CONFIG_ID
 
 mv R-${SLURM_JOB_NAME}-${SLURM_JOB_ID}* clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_*/
 mv clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_* experiments-doreisa/
