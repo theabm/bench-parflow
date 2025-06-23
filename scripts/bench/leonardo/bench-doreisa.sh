@@ -25,5 +25,5 @@ mv clayL_*_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_* experiments-doreisa/
 
 end_script=$(date +%s)
 
-echo ENTIRE SCRIPT TIME $(expr $end_script - $start_script) seconds.
+echo [SCRIPT] START: $start_script END: $end_script DIFF: $(expr $end_script - $start_script)
 

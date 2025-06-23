@@ -22,34 +22,35 @@ timings_compute = []
 
 def simulation_callback(
     pressures: list[da.Array], 
-    saturations: list[da.Array], 
+    # saturations: list[da.Array], 
     timestep: int
     ):
 
-    start = time.perf_counter()
+    start_g = time.perf_counter()
 
     avg_p = pressures[0].mean()
-    avg_s = saturations[0].mean()
+    # avg_s = saturations[0].mean()
 
-    end = time.perf_counter()
-    timings_graph.append(end-start)
+    end_g = time.perf_counter()
 
-    start = time.perf_counter()
+    time_info = (start_g, end_g, end_g - start_g)
+    timings_graph.append(time_info)
+
+    start_c = time.perf_counter()
 
     avg_p = avg_p.compute()
-    avg_s = avg_s.compute()
+    # avg_s = avg_s.compute()
 
-    end = time.perf_counter()
-    timings_compute.append(end-start)
+    end_c = time.perf_counter()
 
-    # result.append(avg_p)
-    print(f"Simulation step: {timestep}\tAvg. Pressure: {avg_p}\tAvg. Saturation: {avg_s}", flush=True)
+    time_info = (start_c, end_c, end_c - start_c)
+    timings_compute.append(time_info)
+
+    print(f"[DOREISA, {timestep}] START : {start_g} END : {end_c} DIFF : {end_c - start_g}")
 
     if timestep == 9:
-        print(f"-TIMINGS-\nTIMINGS GRAPH:\n{timings_graph}\nTIMINGS_COMPUTE:\n{timings_compute}", flush = True)
+        print(f"[DOREISA, LAST STEP] TIMINGS GRAPH:\n{timings_graph}\nTIMINGS COMPUTE:\n{timings_compute}")
 
-    # print(f"Simulation step: {timestep}\tAvg. Pressure: {avg_p}\tAvg. Saturation: {avg_s}", flush=True)
-    
 # window of size 1
 # if you want to do the preprocessing, you need to pass it as an argument
 # to the daskarrayinfo 
@@ -60,7 +61,7 @@ run_simulation(
     simulation_callback,
     [
         ArrayDefinition("pressures", window_size=1),
-        ArrayDefinition("saturations", window_size=1),
+        # ArrayDefinition("saturations", window_size=1),
     ],
     max_iterations=10,
 )
