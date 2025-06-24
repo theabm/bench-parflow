@@ -56,7 +56,6 @@ def simulation_callback(
 # to the daskarrayinfo 
 # doreisa.DaskArrayInfo("pressures", window_size=1, preprocess_pressures)
 # you should add a DaskArrayInfo for every array you will analyze
-print("Before Run Simulation")
 run_simulation(
     simulation_callback,
     [
