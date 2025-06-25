@@ -181,6 +181,7 @@ if [ "$TOTAL_NODES" -gt 1 ]; then
   -x $HEAD_NODE --ntasks=$N_SIM_NODES --ntasks-per-node=1 --cpus-per-task=$RAY_WORKER_CPUS \
   bash -c "
   ulimit -n 65535
+  export OMPI_MCA_btl_tcp_if_include="ib0"
   export OPENBLAS_NUM_THREADS=1
   node_ip=\$(ip -o -4 addr show ib0 | awk \"{print \\\$4}\" | cut -d/ -f1)
         echo \"Node IP: \$node_ip\"
@@ -196,6 +197,7 @@ fi
 srun --cpu-bind=verbose,core  --nodes=$N_SIM_NODES -x $HEAD_NODE \
 	--ntasks-per-node=$MPI_PROCESSES --cpus-per-task=1 \
   	bash -c "
+		export OMPI_MCA_btl_tcp_if_include="ib0"
 		source ./activate_env.sh $BASE_ROOTDIR 
 		${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE}
 	" 2>./errors/simulation.e
