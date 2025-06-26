@@ -5,35 +5,45 @@ import numpy as np
 import re
 
 
-def extract_ranks_from_parflow_name(experiment_name):
-    """Extract ranks from parflow experiment name by multiplying first 3 numbers"""
-    parts = experiment_name.split("_")
-    if len(parts) >= 3:
-        try:
-            return int(parts[1]) * int(parts[2]) * int(parts[3])
-        except (ValueError, IndexError):
-            return 0
-    return 0
-
-
 def process_parflow_data(df):
     """Process parflow data with special handling"""
-    # Extract actual ranks from experiment names
-    df["actual_ranks"] = df["experiment_name"].apply(extract_ranks_from_parflow_name)
-    # Set steps to 10 for all experiments
-    df["actual_steps"] = 10
 
     # Group by actual ranks and calculate mean simulation_total_runtime
-    grouped = df.groupby("actual_ranks")["simulation_total_runtime"].mean().reset_index()
-    grouped.columns = ["num_ranks", "simulation_total_runtime"]
+    grouped = (
+        df.groupby("experiment_id")[
+            "num_ranks", "simulation_total_runtime", "richards_exclude_first_step"
+        ]
+        .mean()
+        .reset_index()
+    )
+    grouped.columns = [
+        "experiment_id",
+        "num_ranks",
+        "simulation_total_runtime",
+        "richards_exclude_first_step",
+    ]
 
     return grouped
 
 
-def process_regular_data(df):
-    """Process doreisa and deisa data"""
+def process_doreisa_data(df):
+    """Process doreisa data"""
+
+    excluded_cols = []
+    for step in df["num_steps"]:
+        excluded_cols.append(f"stdev_publish_time_step_{step}")
+
     # Group by num_ranks and calculate means for all numeric columns except the excluded ones
-    excluded_cols = ["experiment_name", "num_ranks", "num_steps", "var_init_time"]
+    excluded_cols += [
+        "experiment_name",
+        "experiment_id",
+        "num_ranks",
+        "num_steps",
+        "stdev_init_time",
+        "stdev_graph_formation_time",
+        "stdev_graph_compute_time",
+    ]
+
     numeric_cols = [
         col
         for col in df.columns
@@ -41,20 +51,41 @@ def process_regular_data(df):
     ]
 
     # Group by num_ranks and calculate means
-    grouped = df.groupby("num_ranks")[numeric_cols].mean().reset_index()
+    grouped = df.groupby("experiment_id")[numeric_cols].mean().reset_index()
 
     return grouped
 
 
+def process_deisa_data(df):
+    """Process deisa data"""
+
+    pass
+
+
 # Load the CSV files
-parflow_df = pd.read_csv("./experiments-parflow/experiment-timings.csv")
-doreisa_df = pd.read_csv("./experiments-doreisa/experiment-timings.csv")
-deisa_df = pd.read_csv("./experiments-deisa/experiment-timings.csv")
+try:
+    parflow_df = pd.read_csv("./experiments-parflow/experiment-timings.csv")
+except:
+    print("Unable to find data for parflow.")
+    parflow_df = None
+
+try:
+    doreisa_df = pd.read_csv("./experiments-doreisa/experiment-timings.csv")
+except:
+    print("Unable to find data for doreisa.")
+    doreisa_df = None
+
+try:
+    deisa_df = pd.read_csv("./experiments-deisa/experiment-timings.csv")
+except:
+    print("Unable to find data for deisa.")
+    deisa_df = None
+
 
 # Process the data
-parflow_processed = process_parflow_data(parflow_df)
-doreisa_processed = process_regular_data(doreisa_df)
-deisa_processed = process_regular_data(deisa_df)
+parflow_processed = process_parflow_data(parflow_df) if parflow_df is not None else None
+deisa_processed = process_deisa_data(deisa_df) if deisa_df is not None else None
+doreisa_processed = process_doreisa_data(doreisa_df) if doreisa_df is not None else None
 
 # Define colors for each dataset
 colors = {
@@ -65,23 +96,23 @@ colors = {
 
 # Get all columns to plot (excluding the specified ones)
 all_columns = (
-    set(doreisa_processed.columns) | set(deisa_processed.columns) | set(parflow_processed.columns)
+    set(doreisa_processed.columns)
+    | set(deisa_processed.columns)
+    | set(parflow_processed.columns)
 )
-excluded_cols = {"experiment_name", "num_ranks", "num_steps", "var_init_time"}
-plot_columns = [col for col in all_columns if col not in excluded_cols]
 
-# Remove num_ranks from plot_columns as it's our x-axis
-plot_columns = [col for col in plot_columns if col != "num_ranks"]
+plot_columns = [col for col in all_columns if col not in excluded_cols]
 
 # Separate step-specific columns from other columns
 step_columns = [col for col in plot_columns if col.startswith("avg_publish_time_step_")]
-step_related_columns = step_columns + [
-    col for col in plot_columns if col == "avg_publish_time_one_step"
-]
+
+step_related_columns = step_columns + ["avg_publish_time_one_step"]
+
 other_columns = [
     col
     for col in plot_columns
-    if not col.startswith("avg_publish_time_step_") and col != "avg_publish_time_one_step"
+    if not col.startswith("avg_publish_time_step_")
+    and col != "avg_publish_time_one_step"
 ]
 
 # Sort columns for consistent ordering
@@ -231,7 +262,9 @@ if step_related_columns:
         width_idx = i // len(line_styles)
 
         current_style = line_styles[style_idx]
-        current_width = line_widths[width_idx] if width_idx < len(line_widths) else line_widths[0]
+        current_width = (
+            line_widths[width_idx] if width_idx < len(line_widths) else line_widths[0]
+        )
 
         # Doreisa data
         if col in doreisa_processed.columns:
@@ -241,7 +274,9 @@ if step_related_columns:
                     y=doreisa_processed[col],
                     mode="lines+markers",
                     name=f"Doreisa - Step {step_num}",
-                    line=dict(color=colors["doreisa"], dash=current_style, width=current_width),
+                    line=dict(
+                        color=colors["doreisa"], dash=current_style, width=current_width
+                    ),
                     marker=dict(size=4),
                     legendgroup="steps",
                 ),
@@ -257,7 +292,9 @@ if step_related_columns:
                     y=deisa_processed[col],
                     mode="lines+markers",
                     name=f"Deisa - Step {step_num}",
-                    line=dict(color=colors["deisa"], dash=current_style, width=current_width),
+                    line=dict(
+                        color=colors["deisa"], dash=current_style, width=current_width
+                    ),
                     marker=dict(size=4),
                     legendgroup="steps",
                 ),
@@ -324,4 +361,3 @@ print(
 print(f"ParFlow data: {len(parflow_processed)} rank configurations")
 print(f"Doreisa data: {len(doreisa_processed)} rank configurations")
 print(f"Deisa data: {len(deisa_processed)} rank configurations")
-
