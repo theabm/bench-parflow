@@ -1,26 +1,34 @@
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import numpy as np
 import re
 
 
 def process_parflow_data(df):
-    """Process parflow data with special handling"""
-
-    # Group by actual ranks and calculate mean simulation_total_runtime
+    """Process parflow data with proper aggregation and statistics"""
+    # Group by experiment_id and calculate appropriate statistics
     grouped = (
-        df.groupby("experiment_id")[
-            "num_ranks", "simulation_total_runtime", "richards_exclude_first_step"
-        ]
-        .mean()
+        df.groupby("experiment_id")
+        .agg(
+            {
+                "num_ranks": "first",  # Take first value since it's constant per experiment
+                "num_steps": "first",
+                "simulation_total_runtime": ["mean", "std"],
+                "richards_exclude_first_step": ["mean", "std"],
+            }
+        )
         .reset_index()
     )
+
+    # Flatten column names
     grouped.columns = [
         "experiment_id",
         "num_ranks",
-        "simulation_total_runtime",
-        "richards_exclude_first_step",
+        "num_steps",
+        "simulation_total_runtime_mean",
+        "simulation_total_runtime_stdev",
+        "richards_exclude_first_step_mean",
+        "richards_exclude_first_step_stdev",
     ]
 
     return grouped
@@ -28,336 +36,258 @@ def process_parflow_data(df):
 
 def process_doreisa_data(df):
     """Process doreisa data"""
+    # Identify columns to exclude from mean/std calculation
+    excluded_cols = ["experiment_id", "experiment_name", "num_ranks", "num_steps"]
+    excluded_cols += [col for col in df.columns if col.startswith("stdev_")]
 
-    excluded_cols = []
-    for step in df["num_steps"]:
-        excluded_cols.append(f"stdev_publish_time_step_{step}")
+    # Get numeric columns for mean/std calculation
+    numeric_cols = [col for col in df.columns if col not in excluded_cols]
 
-    # Group by num_ranks and calculate means for all numeric columns except the excluded ones
-    excluded_cols += [
-        "experiment_name",
-        "experiment_id",
-        "num_ranks",
-        "num_steps",
-        "stdev_init_time",
-        "stdev_graph_formation_time",
-        "stdev_graph_compute_time",
-    ]
+    # Build aggregation dictionary
+    agg_dict = {}
+    agg_dict.update({col: ["mean", "std"] for col in numeric_cols})
+    agg_dict.update({"num_ranks": "first", "num_steps": "first"})
 
-    numeric_cols = [
-        col
-        for col in df.columns
-        if col not in excluded_cols and df[col].dtype in ["float64", "int64"]
-    ]
+    # Group and aggregate
+    grouped = df.groupby("experiment_id").agg(agg_dict).reset_index()
 
-    # Group by num_ranks and calculate means
-    grouped = df.groupby("experiment_id")[numeric_cols].mean().reset_index()
+    # Flatten and rename columns
+    new_columns = ["experiment_id"]
+    for col in grouped.columns[1:]:  # Skip experiment_id
+        if isinstance(col, tuple):
+            if col[1] == "mean":
+                new_columns.append(f"{col[0]}_mean")
+            elif col[1] == "std":
+                new_columns.append(f"{col[0]}_stdev")
+            else:  # for "first"
+                new_columns.append(col[0])
+        else:
+            new_columns.append(col)
 
+    grouped.columns = new_columns
     return grouped
 
 
 def process_deisa_data(df):
     """Process deisa data"""
-
-    pass
-
-
-# Load the CSV files
-try:
-    parflow_df = pd.read_csv("./experiments-parflow/experiment-timings.csv")
-except:
-    print("Unable to find data for parflow.")
-    parflow_df = None
-
-try:
-    doreisa_df = pd.read_csv("./experiments-doreisa/experiment-timings.csv")
-except:
-    print("Unable to find data for doreisa.")
-    doreisa_df = None
-
-try:
-    deisa_df = pd.read_csv("./experiments-deisa/experiment-timings.csv")
-except:
-    print("Unable to find data for deisa.")
-    deisa_df = None
+    # For now, return the dataframe as-is or implement specific processing
+    return df
 
 
-# Process the data
-parflow_processed = process_parflow_data(parflow_df) if parflow_df is not None else None
-deisa_processed = process_deisa_data(deisa_df) if deisa_df is not None else None
-doreisa_processed = process_doreisa_data(doreisa_df) if doreisa_df is not None else None
+def safe_load_csv(filepath, dataset_name):
+    """Safely load CSV file with error handling"""
+    try:
+        df = pd.read_csv(filepath)
+        print(f"Successfully loaded {dataset_name} data: {len(df)} rows")
+        return df
+    except FileNotFoundError:
+        print(f"Warning: Unable to find data file for {dataset_name} at {filepath}")
+        return None
+    except Exception as e:
+        print(f"Error loading {dataset_name} data: {str(e)}")
+        return None
+
+
+def plot_with_error_bars(fig, x, y_mean, y_std, name, color, row, col, showlegend=False):
+    """Helper function to add line plot with error bars"""
+    fig.add_trace(
+        go.Scatter(
+            x=x,
+            y=y_mean,
+            mode="lines+markers",
+            name=name,
+            line=dict(color=color),
+            showlegend=showlegend,
+        ),
+        row=row,
+        col=col,
+    )
+
+    # Add error bars
+    fig.add_trace(
+        go.Scatter(
+            x=list(x) + list(x)[::-1],
+            y=list(y_mean + y_std) + list(y_mean - y_std)[::-1],
+            fill="toself",
+            fillcolor=f"rgba{tuple(list(int(color[i : i + 2], 16) for i in (1, 3, 5)) + [0.2])}",
+            line=dict(color="rgba(255,255,255,0)"),
+            showlegend=False,
+            # hoverinfo="skip",
+        ),
+        row=row,
+        col=col,
+    )
+
+
+# Load the CSV files with better error handling
+parflow_df = safe_load_csv("./experiments-parflow/experiment-timings.csv", "parflow")
+doreisa_df = safe_load_csv("./experiments-doreisa/experiment-timings.csv", "doreisa")
+# deisa_df = safe_load_csv("./experiments-deisa/experiment-timings.csv", "deisa")
+deisa_df = None
+
+# Process the data only if DataFrames exist
+datasets = {}
+num_steps = 0
+
+if parflow_df is not None:
+    datasets["parflow"] = process_parflow_data(parflow_df)
+    print(f"Processed ParFlow data: {len(datasets['parflow'])} configurations")
+    num_steps = int(datasets["parflow"]["num_steps"].iloc[0])
+
+if doreisa_df is not None:
+    datasets["doreisa"] = process_doreisa_data(doreisa_df)
+    print(f"Processed Doreisa data: {len(datasets['doreisa'])} configurations")
+    if num_steps == 0:
+        num_steps = int(datasets["doreisa"]["num_steps"].iloc[0])
+    else:
+        assert int(datasets["doreisa"]["num_steps"].iloc[0]) == num_steps
+
+if deisa_df is not None:
+    datasets["deisa"] = process_deisa_data(deisa_df)
+    print(f"Processed Deisa data: {len(datasets['deisa'])} configurations")
+    if num_steps == 0:
+        num_steps = int(datasets["deisa"]["num_steps"].iloc[0])
+    else:
+        assert int(datasets["deisa"]["num_steps"].iloc[0]) == num_steps
+
+# Check if we have any data to work with
+if not datasets:
+    print("Error: No valid datasets found. Please check your file paths.")
+    exit(1)
+
+print(f"Working with {len(datasets)} dataset(s): {list(datasets.keys())}")
+print(f"Number of steps: {num_steps}")
 
 # Define colors for each dataset
 colors = {
-    "parflow": "#1f77b4",  # Blue
-    "doreisa": "#ff7f0e",  # Orange
-    "deisa": "#2ca02c",  # Green
+    "parflow": "#2c7bb6",  # Blue
+    "doreisa": "#d7191c",  # Red
+    "deisa": "#fdae61",  # Orange
 }
 
-# Get all columns to plot (excluding the specified ones)
-all_columns = (
-    set(doreisa_processed.columns)
-    | set(deisa_processed.columns)
-    | set(parflow_processed.columns)
-)
-
-plot_columns = [col for col in all_columns if col not in excluded_cols]
-
-# Separate step-specific columns from other columns
-step_columns = [col for col in plot_columns if col.startswith("avg_publish_time_step_")]
-
-step_related_columns = step_columns + ["avg_publish_time_one_step"]
-
-other_columns = [
-    col
-    for col in plot_columns
-    if not col.startswith("avg_publish_time_step_")
-    and col != "avg_publish_time_one_step"
+# Define the specific metrics to plot as requested in comments
+line_plot_metrics = [
+    "simulation_total_runtime_mean",
+    "richards_exclude_first_step_mean",
+    "total_analytics_time_mean",
+    "avg_graph_formation_time_mean",
+    "avg_graph_compute_time_mean",
+    "avg_pdi_init_time_mean",
+    "avg_pdi_publish_time_one_step_mean",
+    "avg_time_pdi_mean",
+    "avg_publish_time_per_step_mean",
 ]
 
-# Sort columns for consistent ordering
-other_columns.sort()
-step_columns.sort()
+# Create main line plots (3x3 grid, using first 8 slots + box plot in 9th slot)
+subplot_titles = [
+    metric.replace("_", " ").title().replace(" Mean", "") for metric in line_plot_metrics
+]
 
-# Create subplot titles for other columns
-subplot_titles = [col.replace("_", " ").title() for col in other_columns]
-
-# Calculate grid dimensions (4x4 = 16 plots max)
-n_plots = len(other_columns)
-if n_plots > 16:
-    other_columns = other_columns[:16]
-    subplot_titles = subplot_titles[:16]
-    n_plots = 16
-
-# Create subplots in 4x4 grid for main plots
-fig = make_subplots(
+fig_main = make_subplots(
     rows=3,
     cols=3,
     subplot_titles=subplot_titles,
-    vertical_spacing=0.1,
-    horizontal_spacing=0.1,
+    vertical_spacing=0.12,
+    horizontal_spacing=0.05,
 )
 
-# Plot each column (excluding step columns)
-for i, col in enumerate(other_columns):
+# Plot each metric
+for i, metric in enumerate(line_plot_metrics[:-1]):
     row = (i // 3) + 1
     col_idx = (i % 3) + 1
 
-    # Plot simulation_total_runtime for all three datasets (parflow has this)
-    if col == "simulation_total_runtime":
-        # ParFlow data
-        if col in parflow_processed.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=parflow_processed["num_ranks"],
-                    y=parflow_processed[col],
-                    mode="lines+markers",
-                    name="ParFlow",
-                    line=dict(color=colors["parflow"]),
-                    showlegend=True,  # Always show ParFlow legend
-                ),
-                row=row,
-                col=col_idx,
+    stdev_metric = metric.replace("_mean", "_stdev")
+
+    # Plot data from all available datasets for this metric
+    for j, (dataset_name, df) in enumerate(datasets.items()):
+        if metric in df.columns:
+            y_mean = df[metric]
+            y_std = df[stdev_metric] if stdev_metric in df.columns else pd.Series([0] * len(y_mean))
+
+            plot_with_error_bars(
+                fig_main,
+                df["num_ranks"],
+                y_mean,
+                y_std,
+                dataset_name.capitalize(),
+                colors[dataset_name],
+                row,
+                col_idx,
+                showlegend=(i == 0),  # Show legend only for first plot
             )
 
-        # Doreisa data
-        if col in doreisa_processed.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=doreisa_processed["num_ranks"],
-                    y=doreisa_processed[col],
-                    mode="lines+markers",
-                    name="Doreisa",
-                    line=dict(color=colors["doreisa"]),
-                    showlegend=(i == 0),  # Show legend only once
-                ),
-                row=row,
-                col=col_idx,
-            )
-
-        # Deisa data
-        if col in deisa_processed.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=deisa_processed["num_ranks"],
-                    y=deisa_processed[col],
-                    mode="lines+markers",
-                    name="Deisa",
-                    line=dict(color=colors["deisa"]),
-                    showlegend=(i == 0),  # Show legend only once
-                ),
-                row=row,
-                col=col_idx,
-            )
-    else:
-        # For other columns, only plot doreisa and deisa
-        # Doreisa data
-        if col in doreisa_processed.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=doreisa_processed["num_ranks"],
-                    y=doreisa_processed[col],
-                    mode="lines+markers",
-                    name="Doreisa",
-                    line=dict(color=colors["doreisa"]),
-                    showlegend=(i == 0),  # Show legend only once
-                ),
-                row=row,
-                col=col_idx,
-            )
-
-        # Deisa data
-        if col in deisa_processed.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=deisa_processed["num_ranks"],
-                    y=deisa_processed[col],
-                    mode="lines+markers",
-                    name="Deisa",
-                    line=dict(color=colors["deisa"]),
-                    showlegend=(i == 0),  # Show legend only once
-                ),
-                row=row,
-                col=col_idx,
-            )
-
-# Update layout
-fig.update_layout(
+# Update layout for main plot
+fig_main.update_layout(
     title_text="Experiment Performance Analysis - Average Values by Number of Ranks",
     title_x=0.5,
     height=900,
-    width=1200,
+    width=1650,
     showlegend=True,
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
 )
 
+# Add box plot for avg_publish_time_step_{step}_mean to the 9th subplot (ONLY FOR DOREISA DATASET)
+if "doreisa" in datasets:
+    doreisa_df = datasets["doreisa"]
+
+    # Find all avg_publish_time_step_{step}_mean columns
+    step_columns = [
+        col for col in doreisa_df.columns if re.match(r"avg_publish_time_step_\d+_mean", col)
+    ]
+
+    if step_columns:
+        print(f"Found {len(step_columns)} step timing columns for box plot")
+
+        # Prepare data for box plot in the 9th subplot (row=2, col=2)
+        for col in sorted(step_columns):
+            step_num = int(re.search(r"avg_publish_time_step_(\d+)_mean", col).group(1))
+            fig_main.add_trace(
+                go.Box(
+                    y=doreisa_df[col],
+                    name=f"Step {step_num}",
+                    # boxpoints="all",
+                    # jitter=0.3,
+                    # pointpos=0,
+                    marker_color=colors["doreisa"],
+                    showlegend=False,
+                ),
+                row=3,
+                col=3,
+            )
+    else:
+        print("No step timing columns found in Doreisa dataset")
+else:
+    print("Doreisa dataset not available - skipping step timings box plot")
+
 # Update x-axes labels
 for i in range(1, 4):
     for j in range(1, 4):
-        fig.update_xaxes(title_text="Number of Ranks", row=i, col=j)
+        if i == 3 and j == 1:  # Box plot subplot
+            fig_main.update_xaxes(title_text="Step Number", row=i, col=j)
+            fig_main.update_yaxes(title_text="Time (seconds)", row=i, col=j)
+        else:
+            fig_main.update_xaxes(title_text="Number of Ranks", row=i, col=j)
+            fig_main.update_yaxes(title_text="Time (seconds)", row=i, col=j)
 
-# Export to HTML
-fig.write_html("./results/experiment_analysis.html")
+# Export main plot to HTML
+fig_main.write_html("./results/experiment_analysis.html")
+print("Main analysis with step timings saved to 'results/experiment_analysis.html'")
 
-# Create separate figure for step-by-step publish times
-if step_related_columns:
-    # Define line styles and widths (5 styles x 2 widths = 10 combinations)
-    line_styles = ["solid", "dash", "dot", "dashdot", "longdash"]
-    line_widths = [2, 4]  # Two different widths
-    # Create 2x1 subplot for step analysis (one for individual steps, one for overall average)
-    step_fig = make_subplots(
-        rows=2,
-        cols=1,
-        subplot_titles=[
-            "Average Publish Time by Individual Step",
-            "Average Publish Time per Step (Overall)",
-        ],
-        vertical_spacing=0.15,
-    )
 
-    # Plot individual steps in the first subplot
-    for i, col in enumerate(step_columns):
-        step_num = col.split("_")[-1]  # Extract step number
-        style_idx = i % len(line_styles)
-        width_idx = i // len(line_styles)
+# Final summary
+print("\n" + "=" * 50)
+print("ANALYSIS COMPLETE")
+print("=" * 50)
+print(f"Successfully processed {len(datasets)} dataset(s):")
+for dataset_name, df in datasets.items():
+    print(f"  - {dataset_name.capitalize()}: {len(df)} configurations")
 
-        current_style = line_styles[style_idx]
-        current_width = (
-            line_widths[width_idx] if width_idx < len(line_widths) else line_widths[0]
-        )
-
-        # Doreisa data
-        if col in doreisa_processed.columns:
-            step_fig.add_trace(
-                go.Scatter(
-                    x=doreisa_processed["num_ranks"],
-                    y=doreisa_processed[col],
-                    mode="lines+markers",
-                    name=f"Doreisa - Step {step_num}",
-                    line=dict(
-                        color=colors["doreisa"], dash=current_style, width=current_width
-                    ),
-                    marker=dict(size=4),
-                    legendgroup="steps",
-                ),
-                row=1,
-                col=1,
-            )
-
-        # Deisa data
-        if col in deisa_processed.columns:
-            step_fig.add_trace(
-                go.Scatter(
-                    x=deisa_processed["num_ranks"],
-                    y=deisa_processed[col],
-                    mode="lines+markers",
-                    name=f"Deisa - Step {step_num}",
-                    line=dict(
-                        color=colors["deisa"], dash=current_style, width=current_width
-                    ),
-                    marker=dict(size=4),
-                    legendgroup="steps",
-                ),
-                row=1,
-                col=1,
-            )
-
-    # Plot overall average publish time per step in the second subplot
-    if "avg_publish_time_one_step" in doreisa_processed.columns:
-        step_fig.add_trace(
-            go.Scatter(
-                x=doreisa_processed["num_ranks"],
-                y=doreisa_processed["avg_publish_time_one_step"],
-                mode="lines+markers",
-                name="Doreisa - Overall Average",
-                line=dict(color=colors["doreisa"], width=3),
-                marker=dict(size=8),
-                legendgroup="overall",
-            ),
-            row=2,
-            col=1,
-        )
-
-    if "avg_publish_time_one_step" in deisa_processed.columns:
-        step_fig.add_trace(
-            go.Scatter(
-                x=deisa_processed["num_ranks"],
-                y=deisa_processed["avg_publish_time_one_step"],
-                mode="lines+markers",
-                name="Deisa - Overall Average",
-                line=dict(color=colors["deisa"], width=3),
-                marker=dict(size=8),
-                legendgroup="overall",
-            ),
-            row=2,
-            col=1,
-        )
-
-    # Update step figure layout
-    step_fig.update_layout(
-        title_text="Step-by-Step Publish Time Analysis",
-        title_x=0.5,
-        height=900,
-        width=1200,
-        showlegend=True,
-        legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
-    )
-
-    # Update axes labels
-    step_fig.update_xaxes(title_text="Number of Ranks", row=1, col=1)
-    step_fig.update_xaxes(title_text="Number of Ranks", row=2, col=1)
-    step_fig.update_yaxes(title_text="Publish Time (seconds)", row=1, col=1)
-    step_fig.update_yaxes(title_text="Average Publish Time (seconds)", row=2, col=1)
-
-    # Export step figure to separate HTML
-    step_fig.write_html("./results/experiment_step_analysis.html")
-
-print("Analysis complete! Main plots saved to 'results/experiment_analysis.html'")
-if step_related_columns:
-    print("Step-by-step analysis saved to 'results/experiment_step_analysis.html'")
 print(
-    f"Processed {len(other_columns)} main variables and {len(step_related_columns)} step-related variables across 3 datasets"
+    f"Generated analysis with {len(line_plot_metrics)} line plot metrics and step timings box plot"
 )
-print(f"ParFlow data: {len(parflow_processed)} rank configurations")
-print(f"Doreisa data: {len(doreisa_processed)} rank configurations")
-print(f"Deisa data: {len(deisa_processed)} rank configurations")
+
+if not datasets:
+    print("No datasets were successfully loaded!")
+elif len(datasets) < 3:
+    missing = set(["parflow", "doreisa", "deisa"]) - set(datasets.keys())
+    print(f"Note: Missing data for: {', '.join(missing)}")

@@ -101,7 +101,6 @@ class TimingParser:
     def parse_log_file(self, log_file_path: str) -> None:
         """Parse the *.out.log file to extract Total Runtime."""
         try:
-
             with open(log_file_path, "r") as file:
                 content = file.read()
 
@@ -206,11 +205,8 @@ class TimingParser:
         ranks_from_publish = len(self.publish_times_by_rank)
 
         # Use the maximum of both counts as the number of ranks
-        assert (
-            ranks_from_publish == ranks_from_init
-        ), "Ranks do not match! Error during experiment."
+        assert ranks_from_publish == ranks_from_init, "Ranks do not match! Error during experiment."
 
-        
         return ranks_from_init
 
     def calculate_metrics(self) -> Dict:
@@ -255,17 +251,13 @@ class TimingParser:
             step_times = publish_times_by_step[step]
             if step_times:
                 metrics[f"avg_publish_time_step_{step}"] = statistics.mean(step_times)
-                metrics[f"stdev_publish_time_step_{step}"] = statistics.stdev(
-                    step_times
-                )
+                metrics[f"stdev_publish_time_step_{step}"] = statistics.stdev(step_times)
             else:
                 metrics[f"avg_publish_time_step_{step}"] = None
                 metrics[f"stdev_publish_time_step_{step}"] = None
 
         # Store the number of steps for later use
-        metrics["num_steps"] = (
-            len(publish_times_by_step) if publish_times_by_step else 0
-        )
+        metrics["num_steps"] = len(publish_times_by_step) if publish_times_by_step else 0
 
         if publish_times_by_step:
             # we are in parflow case
@@ -280,9 +272,7 @@ class TimingParser:
         if all_publish_times and metrics["num_ranks"] > 0 and metrics["num_steps"] > 0:
             total_publish_time = sum(all_publish_times)
             total_expected_entries = metrics["num_ranks"] * metrics["num_steps"]
-            metrics["avg_publish_time_one_step"] = (
-                total_publish_time / total_expected_entries
-            )
+            metrics["avg_publish_time_one_step"] = total_publish_time / total_expected_entries
             # TODO stdev?  HOW TO CATCH OUTLIERS? BOX PLOT with max and min?
         else:
             metrics["avg_publish_time_one_step"] = None
@@ -317,9 +307,7 @@ class TimingParser:
 
             # 3. Total analytics time
             if self.timings_graph and self.timings_compute:
-                metrics["total_analytics_time"] = (
-                    self.timings_graph[0] + self.timings_compute[0]
-                )
+                metrics["total_analytics_time"] = self.timings_graph[0] + self.timings_compute[0]
             else:
                 metrics["total_analytics_time"] = None
         else:
@@ -327,24 +315,16 @@ class TimingParser:
             # 1. Average time to form the graph (average across the 9 steps)
             if self.timings_graph:
                 # TODO stdev or max min?
-                metrics["avg_graph_formation_time"] = statistics.mean(
-                    self.timings_graph
-                )
-                metrics["stdev_graph_formation_time"] = statistics.stdev(
-                    self.timings_graph
-                )
+                metrics["avg_graph_formation_time"] = statistics.mean(self.timings_graph)
+                metrics["stdev_graph_formation_time"] = statistics.stdev(self.timings_graph)
             else:
                 metrics["avg_graph_formation_time"] = None
                 metrics["stdev_graph_formation_time"] = None
 
             # 2. Average time to compute the graph (average across the 9 steps)
             if self.timings_compute:
-                metrics["avg_graph_compute_time"] = statistics.mean(
-                    self.timings_compute
-                )
-                metrics["stdev_graph_compute_time"] = statistics.stdev(
-                    self.timings_compute
-                )
+                metrics["avg_graph_compute_time"] = statistics.mean(self.timings_compute)
+                metrics["stdev_graph_compute_time"] = statistics.stdev(self.timings_compute)
             else:
                 metrics["avg_graph_compute_time"] = None
                 metrics["stdev_graph_compute_time"] = None
@@ -372,9 +352,7 @@ class BatchExperimentProcessor:
     def find_experiment_directories(self) -> List[Path]:
         """Find all experiment directories."""
         if not self.experiments_dir.exists():
-            raise FileNotFoundError(
-                f"Experiments directory not found: {self.experiments_dir}"
-            )
+            raise FileNotFoundError(f"Experiments directory not found: {self.experiments_dir}")
 
         experiment_dirs = [d for d in self.experiments_dir.iterdir() if d.is_dir()]
         experiment_dirs.sort()  # Sort for consistent ordering
@@ -397,13 +375,16 @@ class BatchExperimentProcessor:
         log_files = list(experiment_dir.glob("*.out.log"))
         log_file = log_files[0] if log_files else None
 
-        return (str(r_file) if r_file else None, str(csv_file) if csv_file else None, str(log_file) if log_file else None)
+        return (
+            str(r_file) if r_file else None,
+            str(csv_file) if csv_file else None,
+            str(log_file) if log_file else None,
+        )
 
     def process_experiment(self, experiment_dir: Path) -> Optional[ExperimentResult]:
         """Process a single experiment directory."""
         experiment_name = experiment_dir.name
         experiment_id = int(str(experiment_name).split("_")[-1])
-
 
         print(f"  📁 Processing experiment: {experiment_name}")
 
@@ -420,7 +401,7 @@ class BatchExperimentProcessor:
         if not csv_file:
             print(f"    ❌ No *.out.timing.csv file found in {experiment_name}")
             return None
-        
+
         if not log_file:
             print(f"    ❌ No *.out.log file found in {experiment_name}")
             return None
@@ -437,11 +418,11 @@ class BatchExperimentProcessor:
         # Calculate metrics
         metrics = parser.calculate_metrics()
 
-        if "parflow" in experiment_name: 
+        if "parflow" in experiment_name:
             parts = experiment_name.split("_")
             if len(parts) >= 3:
                 try:
-                    metrics["num_ranks"] =  int(parts[1]) * int(parts[2]) * int(parts[3])
+                    metrics["num_ranks"] = int(parts[1]) * int(parts[2]) * int(parts[3])
                 except (ValueError, IndexError):
                     pass
 
@@ -511,19 +492,18 @@ class BatchExperimentProcessor:
             return
 
         # Determine the maximum number of steps across all experiments
-        max_steps = (
-            max(result.num_steps for result in self.results) if self.results else 0
-        )
+        max_steps = max(result.num_steps for result in self.results) if self.results else 0
 
         # Define CSV headers
         headers = [
             "experiment_name",
+            "experiment_id",
             "num_ranks",
             "num_steps",
             "simulation_total_runtime",
             "richards_exclude_first_step",
-            "avg_init_time",
-            "stdev_init_time",
+            "avg_pdi_init_time",
+            "stdev_pdi_init_time",
         ]
 
         # Add step-wise publish time headers
@@ -534,7 +514,7 @@ class BatchExperimentProcessor:
         # Add remaining headers
         headers.extend(
             [
-                "avg_publish_time_one_step",
+                "avg_pdi_publish_time_one_step",
                 "avg_time_pdi",
                 "avg_graph_formation_time",
                 "stdev_graph_formation_time",
@@ -555,6 +535,7 @@ class BatchExperimentProcessor:
                 for result in self.results:
                     row = [
                         result.experiment_name,
+                        result.experiment_id,
                         result.num_ranks,
                         result.num_steps,
                         result.simulation_total_runtime,
@@ -633,9 +614,7 @@ Example usage:
         """,
     )
 
-    parser.add_argument(
-        "experiments_dir", help="Directory containing experiment subdirectories"
-    )
+    parser.add_argument("experiments_dir", help="Directory containing experiment subdirectories")
 
     parser.add_argument(
         "--output",
@@ -682,4 +661,3 @@ Example usage:
 
 if __name__ == "__main__":
     main()
-
