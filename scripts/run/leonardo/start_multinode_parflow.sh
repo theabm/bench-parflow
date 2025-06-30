@@ -2,6 +2,11 @@
 
 set -xeu
 
+if [[ "$#" -lt 1 ]]; then
+  echo "Error: A configuration ID (0 - N) must be provided as arguments."
+  exit 1
+fi
+
 # --------------------------------------------------------
 # 		NODE & RESOURCE ALLOCATION
 # --------------------------------------------------------
@@ -39,11 +44,21 @@ echo Launching Simulation...
 CASE_NAME="clayL"
 xsplit=10  # Number of MPI tasks per node along the x-axis
 ysplit=10  # Number of MPI tasks per node along the y-axis
-cells=120  # Total number of cells along each dimension per node (square problem in x and y dimensions)
+cells=240  # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$TOTAL_NODES
 MPI_PROCESSES=$((xsplit * ysplit))
 
-EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)"
+if ! [ -f $BASE_ROOTDIR/utils/time-offset.out ]; then
+  mpicc $BASE_ROOTDIR/utils/time-offset.c -o $BASE_ROOTDIR/utils/time-offset.out
+fi
+
+srun --overlap --ntasks-per-node=1 --cpus-per-task=1 bash -c "
+  $BASE_ROOTDIR/utils/time-offset.out
+"
+
+CONFIG_ID=$2
+EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)_$CONFIG_ID"
+echo "CONFIG_ID : $CONFIG_ID"
 mkdir -p "$EXP_DIR"
 cd "$EXP_DIR"
 cp "$PF_DIR"/pfsimulator/third_party/pdi/conf.yml "$EXP_DIR"/conf.yml
@@ -64,6 +79,7 @@ EOF
 
 # Start memory logger on every node - cpu 0 and 1 is dedicated only to this
 srun --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=1 bash -c "
+    export OMPI_MCA_btl_tcp_if_include="ib0"
     source ./activate_env.sh $BASE_ROOTDIR
     python3 $BASE_ROOTDIR/utils/memory-logger.py --interval 30 
 "&
@@ -71,6 +87,7 @@ srun --cpu-bind=verbose,core --ntasks-per-node=1 --cpus-per-task=1 bash -c "
 srun --cpu-bind=verbose,core  --nodes=$TOTAL_NODES \
 	--ntasks-per-node=$MPI_PROCESSES --cpus-per-task=1 \
   	bash -c "
+		export OMPI_MCA_btl_tcp_if_include="ib0"
 		source ./activate_env.sh $BASE_ROOTDIR 
 		${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE}
 	" 2>./errors/simulation.e

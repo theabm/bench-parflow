@@ -4,8 +4,8 @@ set -xeu
 
 echo RUNNING: DEISA
 
-if [[ "$#" -lt 1 ]]; then
-  echo "Error: An argument (0 or 1) must be provided."
+if [[ "$#" -lt 2 ]]; then
+  echo "Error: A case (0 or 1) and a configuration ID (0 - N) must be provided as arguments."
   exit 1
 fi
 
@@ -83,7 +83,7 @@ CASE_NAME="clayL"
 xsplit=10 # Number of MPI tasks per node along the x-axis
 ysplit=10 # Number of MPI tasks per node along the y-axis
 
-cells=120 # Total number of cells along each dimension per node (square problem in x and y dimensions)
+cells=240 # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$N_SIM_NODES
 # HEAD NODE
 DASK_SCHEDULER_CPUS=55
@@ -99,12 +99,22 @@ MPI_PROCESSES=$((xsplit * ysplit))
 # ----
 # SUM: 112
 
-EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)"
+CONFIG_ID=$2
+EXP_DIR=$BASE_ROOTDIR/"${CASE_NAME}_${xsplit}_${ysplit}_${nodes}_${cells}_${SLURM_JOB_NAME}_${SLURM_JOB_ID}_$(date +%Y%m%d_%H%M%S)_$CONFIG_ID"
 mkdir -p "$EXP_DIR"
+echo "CONFIG_ID : $CONFIG_ID"
 cd "$EXP_DIR"
 cp "$PF_DIR"/pfsimulator/third_party/pdi/conf-deisa-insitu.yml "$EXP_DIR"/conf.yml
 cp "$BASE_ROOTDIR"/scripts/run/clayL.tcl "$EXP_DIR"/clayL.tcl
 mkdir ./errors
+
+if ! [ -f $BASE_ROOTDIR/utils/time-offset.out ]; then
+  mpicc $BASE_ROOTDIR/utils/time-offset.c -o $BASE_ROOTDIR/utils/time-offset.out
+fi
+
+srun --overlap --ntasks-per-node=1 --cpus-per-task=1 bash -c "
+  $BASE_ROOTDIR/utils/time-offset.out
+"
 
 HOST_FILE=$EXP_DIR/hostfile.txt
 
@@ -182,13 +192,12 @@ echo "AnalyticsPID $ANALYTICS_PID"
 # --------------------------------------------------------
 
 echo "Launching Dask Workers on ${#SIM_NODES[@]} nodes..."
-
 # One Dask Worker per node
 srun --cpu-bind=verbose,core --nodes=$N_SIM_NODES -x $HEAD_NODE \
 	--ntasks=$N_SIM_NODES --ntasks-per-node=1 --cpus-per-task=$DASK_WORKER_CPUS\
 	bash -c "
 	dask worker --worker-port 2000 --scheduler-file ./$SCHEFILE \
-	--local-directory ./workers --nworkers 1 --nthreads 5 \
+	--local-directory ./workers --nworkers 1 --nthreads $DASK_WORKER_CPUS \
 " 2>./errors/dask-workers.e &
 
 end=$(date +%s)
@@ -205,7 +214,7 @@ tclsh ${CASE_NAME}.tcl ${xsplit} ${ysplit} "${nodes}" ${cells}
 srun --cpu-bind=verbose,core --ntasks=$((MPI_PROCESSES * N_SIM_NODES)) --nodes=$N_SIM_NODES -x $HEAD_NODE \
 	--ntasks-per-node=$MPI_PROCESSES --cpus-per-task=1\
 	bash -c "
-  	${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE} \
+       ${PDI_INSTALL}/bin/pdirun ${PARFLOW_DIR}/bin/parflow ${CASE} \
 "  2>./errors/simulation.e
 
 end=$(date +%s)

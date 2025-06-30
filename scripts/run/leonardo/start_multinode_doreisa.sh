@@ -56,6 +56,8 @@ echo HEAD_ADDRESS "${HEAD_ADDRESS}"
 echo SIM_NODES "${SIM_NODES[*]}"
 echo N_SIM_NODES "${N_SIM_NODES}"
 
+
+
 # --------------------------------------------------------
 #			ENVIRONMENT SETUP
 # --------------------------------------------------------
@@ -81,7 +83,7 @@ CASE_NAME="clayL"
 xsplit=10 # Number of MPI tasks per node along the x-axis
 ysplit=10 # Number of MPI tasks per node along the y-axis
 
-cells=120 # Total number of cells along each dimension per node (square problem in x and y dimensions)
+cells=240 # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$N_SIM_NODES
 # HEAD NODE
 RAY_HEAD_CPUS=55
@@ -105,6 +107,14 @@ cd "$EXP_DIR"
 cp "$PF_DIR"/pfsimulator/third_party/pdi/conf-doreisa.yml "$EXP_DIR"/conf.yml
 cp "$BASE_ROOTDIR"/scripts/run/clayL.tcl "$EXP_DIR"/clayL.tcl
 mkdir ./errors
+
+if ! [ -f $BASE_ROOTDIR/utils/time-offset.out ]; then
+  mpicc $BASE_ROOTDIR/utils/time-offset.c -o $BASE_ROOTDIR/utils/time-offset.out
+fi
+
+srun --overlap --ntasks-per-node=1 --cpus-per-task=1 bash -c "
+  $BASE_ROOTDIR/utils/time-offset.out
+"
 
 # -------------------------------------------------------- 
 #			Time measurement
