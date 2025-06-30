@@ -296,14 +296,18 @@ class TimingParser:
             # 1. Graph formation time (already averaged)
             if self.timings_graph:
                 metrics["avg_graph_formation_time"] = self.timings_graph[0]
+                metrics["stdev_graph_formation_time"] = 0
             else:
                 metrics["avg_graph_formation_time"] = None
+                metrics["stdev_graph_formation_time"] = None
 
             # 2. Graph compute time (already final)
             if self.timings_compute:
                 metrics["avg_graph_compute_time"] = self.timings_compute[0]
+                metrics["stdev_graph_compute_time"] = 0
             else:
                 metrics["avg_graph_compute_time"] = None
+                metrics["stdev_graph_compute_time"] = None
 
             # 3. Total analytics time
             if self.timings_graph and self.timings_compute:

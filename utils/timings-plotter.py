@@ -70,8 +70,36 @@ def process_doreisa_data(df):
 
 def process_deisa_data(df):
     """Process deisa data"""
-    # For now, return the dataframe as-is or implement specific processing
-    return df
+    # Identify columns to exclude from mean/std calculation
+    excluded_cols = ["experiment_id", "experiment_name", "num_ranks", "num_steps"]
+    excluded_cols += [col for col in df.columns if col.startswith("stdev_")]
+
+    # Get numeric columns for mean/std calculation
+    numeric_cols = [col for col in df.columns if col not in excluded_cols]
+
+    # Build aggregation dictionary
+    agg_dict = {}
+    agg_dict.update({col: ["mean", "std"] for col in numeric_cols})
+    agg_dict.update({"num_ranks": "first", "num_steps": "first"})
+
+    # Group and aggregate
+    grouped = df.groupby("experiment_id").agg(agg_dict).reset_index()
+
+    # Flatten and rename columns
+    new_columns = ["experiment_id"]
+    for col in grouped.columns[1:]:  # Skip experiment_id
+        if isinstance(col, tuple):
+            if col[1] == "mean":
+                new_columns.append(f"{col[0]}_mean")
+            elif col[1] == "std":
+                new_columns.append(f"{col[0]}_stdev")
+            else:  # for "first"
+                new_columns.append(col[0])
+        else:
+            new_columns.append(col)
+
+    grouped.columns = new_columns
+    return grouped
 
 
 def safe_load_csv(filepath, dataset_name):
@@ -122,8 +150,7 @@ def plot_with_error_bars(fig, x, y_mean, y_std, name, color, row, col, showlegen
 # Load the CSV files with better error handling
 parflow_df = safe_load_csv("./experiments-parflow/experiment-timings.csv", "parflow")
 doreisa_df = safe_load_csv("./experiments-doreisa/experiment-timings.csv", "doreisa")
-# deisa_df = safe_load_csv("./experiments-deisa/experiment-timings.csv", "deisa")
-deisa_df = None
+deisa_df = safe_load_csv("./experiments-deisa/experiment-timings.csv", "deisa")
 
 # Process the data only if DataFrames exist
 datasets = {}
