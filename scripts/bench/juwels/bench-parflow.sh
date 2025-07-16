@@ -2,8 +2,9 @@
 
 #SBATCH --job-name=parflow
 #SBATCH --time=00:12:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=48
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=30
+#SBATCH --cpus-per-task=1
 #SBATCH --partition=booster
 #SBATCH --account=esmtst
 

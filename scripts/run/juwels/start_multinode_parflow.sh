@@ -42,8 +42,8 @@ export PDI_INSTALL=${BASE_ROOTDIR}/pdi-$PDIV/install
 echo Launching Simulation...
 
 CASE_NAME="clayL"
-xsplit=6  # Number of MPI tasks per node along the x-axis
-ysplit=8  # Number of MPI tasks per node along the y-axis
+xsplit=5  # Number of MPI tasks per node along the x-axis
+ysplit=6  # Number of MPI tasks per node along the y-axis
 cells=240  # Total number of cells along each dimension per node (square problem in x and y dimensions)
 nodes=$TOTAL_NODES
 MPI_PROCESSES=$((xsplit * ysplit))
