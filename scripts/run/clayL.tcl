@@ -287,13 +287,18 @@ pfset Solver.AbsTol                                     1E-12
  
 pfset Solver.PrintSaturation                            False
 pfset Solver.PrintSubsurf                               False
-pfset Solver.PrintPressure                             	False 
+pfset Solver.PrintPressure                              False 
+
+#---- INSITU
+
+pfset Solver.ShareInsituPressure                        True
+pfset Solver.ShareInsituSaturation                      False
 
 #---- PDI
 pfset Solver.WritePDISubsurfData                        False
 pfset Solver.WritePDIMannings                           False
 pfset Solver.WritePDISlopes                             False
-pfset Solver.WritePDIPressure                           True
+pfset Solver.WritePDIPressure                           False
 pfset Solver.WritePDISpecificStorage                    False
 pfset Solver.WritePDIVelocities                         False
 pfset Solver.WritePDISaturation                         False
